@@ -37,6 +37,23 @@ export default clerkMiddleware(async (auth, request) => {
 });
 
 export const config = {
+  /**
+   * Runs on Node, not on the edge.
+   *
+   * Clerk v7's middleware reaches for Node built-ins — `#crypto` for token
+   * verification and `#safe-node-apis` underneath it — so bundling it for the
+   * edge target fails at deploy time with:
+   *
+   *   The Edge Function "middleware" is referencing unsupported modules:
+   *     @clerk/shared/authorization, #crypto, #safe-node-apis, …
+   *
+   * Middleware defaults to the edge runtime up to Next 15, and the Node.js
+   * runtime became stable in 15.5 — which is what makes this one line legal
+   * here. Next 16 renames the file to `proxy.ts` and flips the default to
+   * Node, at which point this key has to go: setting `runtime` in a proxy file
+   * is an error rather than a no-op.
+   */
+  runtime: "nodejs",
   matcher: [
     // Skip Next.js internals and all static files, unless found in search params
     "/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)",
