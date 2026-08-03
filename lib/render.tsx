@@ -107,16 +107,23 @@ export const renderCarouselAssets = async (carouselId: string) => {
 
   const urls: string[] = [];
 
+  // Each pass overwrites the same storage path, so the public URL is stable and
+  // the browser (and any platform that cached the last fetch) would keep the
+  // superseded PNG. The version stamp makes a re-render a different URL.
+  const version = Date.now();
+
   for (const slide of slides) {
     const bytes = await renderSlidePng(
       slideArtProps(slide, carousel, brand, slides.length, background, logo)
     );
 
-    const url = await uploadAsset(
+    const uploaded = await uploadAsset(
       `${brand.user_id}/${carouselId}/slide-${slide.position}.png`,
       bytes,
       "image/png"
     );
+
+    const url = `${uploaded}?v=${version}`;
 
     const { error: updateError } = await supabase
       .from("slides")

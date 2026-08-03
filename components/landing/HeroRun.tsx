@@ -3,7 +3,7 @@
 import { useEffect, useRef } from "react";
 
 import SampleSlide from "@/components/SampleSlide";
-import { HERO_RUN } from "@/lib/hero-run";
+import { HERO_PRESET, HERO_RUN } from "@/lib/hero-run";
 
 /** Width of one night. Its height follows the 1080 by 1350 slide ratio. */
 const CARD = 224;
@@ -27,10 +27,11 @@ const CARD = 224;
  * Hovering any night brings it back to full strength: the dimming is
  * atmosphere, not a claim that the older posts are worse.
  *
- * Rendered in the nocturne preset because that is the preset whose imageStyle
- * generated these pictures. A preset now owns the palette and the photography
- * together, so pairing one preset's frame with another's image is exactly the
- * mismatch the registry was merged to prevent.
+ * Rendered in HERO_PRESET because that is the preset whose imageStyle generated
+ * these pictures. A preset now owns the palette and the photography together,
+ * so pairing one preset's frame with another's image is exactly the mismatch
+ * the registry was merged to prevent — hence one exported constant shared with
+ * the generator rather than a preset id written out here.
  */
 export default function HeroRun() {
   const scroller = useRef<HTMLDivElement>(null);
@@ -91,7 +92,7 @@ export default function HeroRun() {
                   index={0}
                   total={4}
                   width={CARD}
-                  preset="nocturne"
+                  preset={HERO_PRESET}
                   backgroundUrl={night.image}
                   className={latest ? "ring-1 ring-ember/40" : ""}
                 />

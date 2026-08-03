@@ -16,23 +16,44 @@ import { Slide } from "@/types";
 export default function SlideEditor({ slide }: { slide: Slide }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
-  const [dirty, setDirty] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const server = {
+    heading: slide.heading,
+    body: slide.body ?? "",
+    footnote: slide.footnote ?? "",
+  };
+
+  // Controlled, but re-seeded whenever the server sends different copy: a
+  // re-render (or a regeneration) rewrites the slide, and uncontrolled inputs
+  // would happily keep showing the text it replaced.
+  const [values, setValues] = useState(server);
+  const [seed, setSeed] = useState(server);
+
+  if (
+    seed.heading !== server.heading ||
+    seed.body !== server.body ||
+    seed.footnote !== server.footnote
+  ) {
+    setSeed(server);
+    setValues(server);
+  }
+
+  const dirty =
+    values.heading !== server.heading ||
+    values.body !== server.body ||
+    values.footnote !== server.footnote;
+
+  const set = (field: keyof typeof values) => (value: string) =>
+    setValues((prev) => ({ ...prev, [field]: value }));
 
   const onSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError(null);
 
-    const form = new FormData(event.currentTarget);
-
     startTransition(async () => {
       try {
-        await updateSlide(slide.id, {
-          heading: String(form.get("heading") ?? ""),
-          body: String(form.get("body") ?? ""),
-          footnote: String(form.get("footnote") ?? ""),
-        });
-        setDirty(false);
+        await updateSlide(slide.id, values);
         router.refresh();
       } catch (err) {
         setError(err instanceof Error ? err.message : "Could not save slide.");
@@ -43,7 +64,6 @@ export default function SlideEditor({ slide }: { slide: Slide }) {
   return (
     <form
       onSubmit={onSubmit}
-      onChange={() => setDirty(true)}
       className="rounded-lg border border-white/10 p-4 grid gap-3"
     >
       <div className="flex items-center justify-between">
@@ -57,23 +77,30 @@ export default function SlideEditor({ slide }: { slide: Slide }) {
         ) : null}
       </div>
 
-      <Input name="heading" defaultValue={slide.heading} required />
+      <Input
+        name="heading"
+        value={values.heading}
+        onChange={(e) => set("heading")(e.target.value)}
+        required
+      />
 
       {slide.kind !== "hook" || slide.body ? (
-        <Textarea name="body" rows={3} defaultValue={slide.body ?? ""} />
-      ) : (
-        <input type="hidden" name="body" value="" />
-      )}
+        <Textarea
+          name="body"
+          rows={3}
+          value={values.body}
+          onChange={(e) => set("body")(e.target.value)}
+        />
+      ) : null}
 
       {slide.kind === "cta" ? (
         <Input
           name="footnote"
-          defaultValue={slide.footnote ?? ""}
+          value={values.footnote}
+          onChange={(e) => set("footnote")(e.target.value)}
           placeholder="@brand — link in bio"
         />
-      ) : (
-        <input type="hidden" name="footnote" value={slide.footnote ?? ""} />
-      )}
+      ) : null}
 
       {error ? <p className="text-xs text-red-400">{error}</p> : null}
     </form>

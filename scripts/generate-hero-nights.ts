@@ -10,7 +10,9 @@
  * scripts/generate-vibe-previews.ts.
  *
  * Scenes live next to the headlines they sit behind, in lib/hero-run.ts, so a
- * night cannot end up illustrated by the wrong picture.
+ * night cannot end up illustrated by the wrong picture. The look comes from
+ * HERO_PRESET in the same file — the constant the hero renders its frames in —
+ * so the pictures and the frames around them can only ever be the same preset.
  *
  * Pass ids to regenerate only those nights:
  *
@@ -57,7 +59,7 @@ const main = async () => {
   // Imported after the env is set — the client reads the model id at import.
   const { generateImage } = await import("../lib/openrouter");
   const { hookImagePrompt } = await import("../lib/generator");
-  const { HERO_RUN } = await import("../lib/hero-run");
+  const { HERO_PRESET, HERO_RUN } = await import("../lib/hero-run");
 
   mkdirSync(OUT_DIR, { recursive: true });
 
@@ -69,7 +71,9 @@ const main = async () => {
 
     process.stdout.write(`${night.id}: generating… `);
 
-    const image = await generateImage(hookImagePrompt(night.scene, "nocturne"));
+    const image = await generateImage(
+      hookImagePrompt(night.scene, HERO_PRESET)
+    );
 
     if (!image) {
       console.log("no image returned");
