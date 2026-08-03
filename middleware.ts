@@ -36,23 +36,22 @@ export default clerkMiddleware(async (auth, request) => {
   }
 });
 
+// Keep every comment in this object a line comment, and keep "at" sigils out
+// of it. Vercel statically evaluates this export, and a block comment here is
+// parsed as JSDoc: an "at" word inside one becomes a JSDoc tag, whose tokens
+// the evaluator cannot read. It fails the deploy with the wonderfully opaque
+//   Error: Unhandled type: "ColonToken" :
+// long after `next build` has already succeeded locally.
 export const config = {
-  /**
-   * Runs on Node, not on the edge.
-   *
-   * Clerk v7's middleware reaches for Node built-ins — `#crypto` for token
-   * verification and `#safe-node-apis` underneath it — so bundling it for the
-   * edge target fails at deploy time with:
-   *
-   *   The Edge Function "middleware" is referencing unsupported modules:
-   *     @clerk/shared/authorization, #crypto, #safe-node-apis, …
-   *
-   * Middleware defaults to the edge runtime up to Next 15, and the Node.js
-   * runtime became stable in 15.5 — which is what makes this one line legal
-   * here. Next 16 renames the file to `proxy.ts` and flips the default to
-   * Node, at which point this key has to go: setting `runtime` in a proxy file
-   * is an error rather than a no-op.
-   */
+  // Runs on Node rather than the edge. Clerk v7's middleware needs Node
+  // built-ins (crypto, and the safe-node-apis shim under it), so bundling it
+  // for the edge target fails the deploy outright. Middleware defaults to edge
+  // through Next 15; the Node runtime went stable in 15.5, which is what makes
+  // this line legal here.
+  //
+  // Next 16 renames this file to proxy.ts and defaults to Node — and setting
+  // `runtime` in a proxy file throws rather than being ignored, so this key
+  // has to be deleted as part of that upgrade.
   runtime: "nodejs",
   matcher: [
     // Skip Next.js internals and all static files, unless found in search params
