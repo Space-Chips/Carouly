@@ -42,17 +42,18 @@ export default clerkMiddleware(async (auth, request) => {
 // the evaluator cannot read. It fails the deploy with the wonderfully opaque
 //   Error: Unhandled type: "ColonToken" :
 // long after `next build` has already succeeded locally.
+// No `runtime` key: this stays on the edge, which is the default through
+// Next 15. Do not move it to "nodejs" to chase a bundling error. That path
+// looks tempting and deploys green, but Vercel ships Node middleware as
+// unbundled source next to a traced node_modules, and Clerk's ESM build is
+// bundler-only — no "type" field of its own and six extensionless relative
+// imports — so real Node cannot load it either as CommonJS or as ESM. It
+// fails at runtime with MIDDLEWARE_INVOCATION_FAILED, after a clean build.
+//
+// What actually made the edge bundle resolve was "type": "module" in
+// package.json. Without it the bundler left every @clerk/shared subpath
+// external and the deploy was rejected for referencing unsupported modules.
 export const config = {
-  // Runs on Node rather than the edge. Clerk v7's middleware needs Node
-  // built-ins (crypto, and the safe-node-apis shim under it), so bundling it
-  // for the edge target fails the deploy outright. Middleware defaults to edge
-  // through Next 15; the Node runtime went stable in 15.5, which is what makes
-  // this line legal here.
-  //
-  // Next 16 renames this file to proxy.ts and defaults to Node — and setting
-  // `runtime` in a proxy file throws rather than being ignored, so this key
-  // has to be deleted as part of that upgrade.
-  runtime: "nodejs",
   matcher: [
     // Skip Next.js internals and all static files, unless found in search params
     "/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)",
