@@ -422,4 +422,4 @@ preview can't drift from what actually gets posted.
   ones once you have them — a five-star row nobody wrote costs more trust than
   it buys.
 - Billing is B2C only (`PricingTable` for users, not organizations). Clerk
-  supports org plans if this ever needs teams.
+  supports org plans if this ever needs teams
