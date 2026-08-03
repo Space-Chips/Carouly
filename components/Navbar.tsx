@@ -1,6 +1,6 @@
 "use client";
 
-import { SignedOut, SignInButton, SignedIn, UserButton } from "@clerk/nextjs";
+import { Show, SignInButton, UserButton } from "@clerk/nextjs";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -29,7 +29,7 @@ const Navbar = () => {
         </Link>
 
         <div className="flex gap-6 items-center text-sm">
-          <SignedIn>
+          <Show when="signed-in">
             {links.map((link) => {
               const active = pathname.startsWith(link.href);
 
@@ -55,13 +55,13 @@ const Navbar = () => {
               );
             })}
             <UserButton />
-          </SignedIn>
+          </Show>
 
-          <SignedOut>
+          <Show when="signed-out">
             <SignInButton>
               <Button size="sm">Sign in</Button>
             </SignInButton>
-          </SignedOut>
+          </Show>
         </div>
       </div>
     </header>

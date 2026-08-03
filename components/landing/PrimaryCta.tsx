@@ -1,6 +1,6 @@
 "use client";
 
-import { SignedIn, SignedOut, SignUpButton } from "@clerk/nextjs";
+import { Show, SignUpButton } from "@clerk/nextjs";
 import { ArrowRight } from "@phosphor-icons/react";
 import Link from "next/link";
 
@@ -25,7 +25,7 @@ export default function PrimaryCta({
 
   return (
     <>
-      <SignedOut>
+      <Show when="signed-out">
         <SignUpButton>
           <button className={`${base} ${scale} ${className}`}>
             Automate now
@@ -36,9 +36,9 @@ export default function PrimaryCta({
             />
           </button>
         </SignUpButton>
-      </SignedOut>
+      </Show>
 
-      <SignedIn>
+      <Show when="signed-in">
         <Link href="/dashboard" className={`${base} ${scale} ${className}`}>
           Back to autopilot
           <ArrowRight
@@ -47,7 +47,7 @@ export default function PrimaryCta({
             className="size-4 transition-transform duration-700 ease-[cubic-bezier(0.32,0.72,0,1)] group-hover:translate-x-1"
           />
         </Link>
-      </SignedIn>
+      </Show>
     </>
   );
 }

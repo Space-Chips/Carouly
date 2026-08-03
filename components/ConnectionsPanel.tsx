@@ -46,10 +46,8 @@ export type ConnectionInfo = {
 /**
  * Account connections.
  *
- * Instagram and TikTok are one click: the button hands the user to the
- * platform's own login, and the callback stores a long-lived token that this
- * app keeps refreshing on its own. The paste-a-token form only appears for
- * platforms with no OAuth app configured.
+ * Instagram is one click: the button hands the user to Instagram's own login,
+ * and the callback stores a long-lived token that this app keeps refreshing.
  */
 export default function ConnectionsPanel({
   adapters,
@@ -234,20 +232,8 @@ function ConnectionCard({
 
       {needsSetup && adapter.oauth ? (
         <p className="text-xs text-muted-foreground border-t border-white/10 pt-3">
-          One-click connect is off until{" "}
-          <code className="text-foreground">
-            {adapter.oauth.envVars.join(" and ")}
-          </code>{" "}
-          are set.{" "}
-          <a
-            href={adapter.oauth.setupUrl}
-            target="_blank"
-            rel="noreferrer"
-            className="underline"
-          >
-            Create the app
-          </a>
-          {adapter.fields.length ? ", or paste a token below." : "."}
+          Instagram connection is temporarily unavailable. Please contact us
+          and we’ll get it fixed.
         </p>
       ) : null}
 

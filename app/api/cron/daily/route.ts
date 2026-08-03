@@ -6,10 +6,11 @@ import { refreshExpiringConnections } from "@/lib/social";
 /**
  * Daily generation cron.
  *
- * Schedule it hourly (see vercel.json): each brand posts in its own timezone,
- * so the job wakes up every hour and only runs the brands whose local posting
- * hour has arrived. The unique (brand_id, run_date) index makes repeat runs
- * within the same local day a no-op.
+ * Hobby-plan deployment uses one daily invocation (see vercel.json), batching
+ * every eligible brand. The pipeline retains its hourly mode: remove
+ * `ignorePostHour` and restore the hourly expression when the plan supports it.
+ * The unique (brand_id, run_date) index makes repeat runs within the same
+ * local day a no-op.
  *
  * Vercel Cron sends `Authorization: Bearer $CRON_SECRET` automatically once
  * CRON_SECRET is set in the project env.
@@ -36,10 +37,12 @@ export async function GET(request: NextRequest) {
   try {
     // Renew tokens before generating: Instagram's expire after 60 days and
     // TikTok's after 24 hours, and a token can only be refreshed while it is
-    // still alive. Doing it hourly means a connection made once never rots.
+    // still alive.
     const refreshed = await refreshExpiringConnections();
 
-    const results = await runDueBrands();
+    // A daily cron cannot wait for each local posting hour, so it creates and
+    // publishes each eligible brand batch in this single run.
+    const results = await runDueBrands({ ignorePostHour: true });
 
     return NextResponse.json({
       ok: true,

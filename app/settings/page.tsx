@@ -31,28 +31,31 @@ export default async function SettingsPage({
   const { tier } = await getEntitlement();
   const quota = tier.id === "free" ? await getQuota(userId!) : null;
 
-  // Adapters live server-side; the client only needs their field descriptors.
-  const adapters: AdapterInfo[] = listAdapters().map((adapter) => {
-    const ready = isOAuthReady(adapter.platform);
+  // Instagram is the only customer-facing connection while the other
+  // publishing integrations are being rebuilt.
+  const adapters: AdapterInfo[] = listAdapters()
+    .filter((adapter) => adapter.platform === "instagram")
+    .map((adapter) => {
+      const ready = isOAuthReady(adapter.platform);
 
-    return {
-      platform: adapter.platform,
-      label: adapter.label,
-      docsUrl: adapter.docsUrl,
-      // One-click connect replaces the token form outright — offering both
-      // is how two sets of credentials for one account get stored.
-      fields: ready ? [] : adapter.fields.map((field) => ({ ...field })),
-      oauth: adapter.oauth
-        ? {
-            ready,
-            summary: adapter.oauth.summary,
-            requirement: adapter.oauth.requirement,
-            setupUrl: adapter.oauth.setupUrl,
-            envVars: [adapter.oauth.env.clientId, adapter.oauth.env.clientSecret],
-          }
-        : undefined,
-    };
-  });
+      return {
+        platform: adapter.platform,
+        label: adapter.label,
+        docsUrl: adapter.docsUrl,
+        // An account ID or token is never a customer setup task. If Instagram
+        // Login is unavailable, that is a deployment issue for us to resolve.
+        fields: [],
+        oauth: adapter.oauth
+          ? {
+              ready,
+              summary: adapter.oauth.summary,
+              requirement: adapter.oauth.requirement,
+              setupUrl: adapter.oauth.setupUrl,
+              envVars: [adapter.oauth.env.clientId, adapter.oauth.env.clientSecret],
+            }
+          : undefined,
+      };
+    });
 
   return (
     <main className="pb-24 grid gap-16">
@@ -82,9 +85,8 @@ export default async function SettingsPage({
       <section>
         <h2 className="text-2xl font-semibold tracking-tight">Accounts</h2>
         <p className="mt-3 text-muted-foreground max-w-2xl">
-          Connect an account and it stays connected: tokens are refreshed
-          before they expire, encrypted at rest, and never sent back to your
-          browser.
+          Connect Instagram once and Carouly handles the rest. Access is
+          encrypted, renewed automatically, and never shown in your browser.
         </p>
         <div className="mt-8">
           <ConnectionsPanel

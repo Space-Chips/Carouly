@@ -63,7 +63,7 @@ export default function Paywall({
 
   // Clerk stores prices in cents. Falling back to the catalogue keeps the page
   // readable while the request is in flight instead of flashing "$0".
-  const monthly = plan ? Math.round(plan.fee.amount / 100) : target.monthly;
+  const monthly = plan?.fee ? Math.round(plan.fee.amount / 100) : target.monthly;
   const annual = plan?.annualFee
     ? Math.round(plan.annualFee.amount / 100)
     : target.annual;

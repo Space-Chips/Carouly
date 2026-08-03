@@ -351,10 +351,12 @@ export const runBrandDaily = async (
 };
 
 /**
- * Cron entry point. Runs every brand whose local clock has reached its
- * posting hour today. Safe to call hourly.
+ * Cron entry point. Hourly callers run brands once their local posting hour
+ * has arrived; a daily caller can batch every eligible brand instead.
  */
-export const runDueBrands = async (): Promise<BrandRunResult[]> => {
+export const runDueBrands = async (
+  options: { ignorePostHour?: boolean } = {}
+): Promise<BrandRunResult[]> => {
   const supabase = createSupabaseAdminClient();
 
   const { data, error } = await supabase
@@ -367,7 +369,9 @@ export const runDueBrands = async (): Promise<BrandRunResult[]> => {
   const results: BrandRunResult[] = [];
 
   for (const brand of (data ?? []) as Brand[]) {
-    if (localHour(brand.timezone) < brand.post_hour) continue;
+    if (!options.ignorePostHour && localHour(brand.timezone) < brand.post_hour) {
+      continue;
+    }
 
     // No session here, so this reads the webhook-maintained mirror rather than
     // a plan claim. A brand left on autopilot after a subscription lapsed is

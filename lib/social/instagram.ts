@@ -13,34 +13,10 @@ const FACEBOOK_GRAPH = "https://graph.facebook.com/v21.0";
 /** Where Instagram Login tokens are used — no Facebook Page involved. */
 const INSTAGRAM_GRAPH = "https://graph.instagram.com/v23.0";
 
-/**
- * The authorisation screen Instagram shows when it is reached from inside its
- * own onboarding wrapper. The plain `/oauth/authorize` path is the same screen
- * without the wrapper, kept behind an escape hatch below.
- */
-const AUTHORIZE = "https://www.instagram.com/oauth/authorize/third_party/";
-const AUTHORIZE_PLAIN = "https://www.instagram.com/oauth/authorize";
-
-/**
- * Instagram's own "switch to a professional account" flow. Sending the user
- * here first is what removes the single biggest reason connecting fails:
- * `instagram_business_*` scopes are only grantable by a Business or Creator
- * account, and a personal account otherwise hits a dead-end error screen with
- * no explanation and no way forward.
- *
- * Instagram runs the conversion (a few taps, free) and then forwards to
- * `redirect_uri` — the real authorize URL — so a personal account and a
- * business account both end at the same consent screen.
- */
-const CONVERT = "https://www.instagram.com/accounts/convert_to_professional_account/";
+/** Instagram's documented authorization endpoint for Instagram Login. */
+const AUTHORIZE = "https://www.instagram.com/oauth/authorize";
 
 const TOKEN = "https://api.instagram.com/oauth/access_token";
-
-/** The name shown on Instagram's screens. Defaults to something honest. */
-const displayName = () =>
-  process.env.INSTAGRAM_APP_DISPLAY_NAME?.trim() ||
-  process.env.NEXT_PUBLIC_APP_NAME?.trim() ||
-  "Carousel Studio";
 
 /**
  * "Instagram API with Instagram Login" — the flow that makes connecting one
@@ -147,45 +123,21 @@ export const instagram: Adapter<InstagramCredentials> = {
   oauth: {
     env: { clientId: "INSTAGRAM_APP_ID", clientSecret: "INSTAGRAM_APP_SECRET" },
     setupUrl: "https://developers.facebook.com/apps",
-    summary: "Sign in to Instagram and allow posting — nothing to copy or paste.",
+    summary: "Sign in to Instagram and allow Carouly to publish for you.",
     requirement:
-      "A personal account is fine: Instagram offers the free switch to a Creator account during the flow.",
+      "Instagram requires a free professional account (Business or Creator).",
     // Long-lived tokens last 60 days; refresh with a week to spare.
     refreshLeadMs: 7 * 24 * 60 * 60 * 1000,
 
-    /**
-     * Two nested URLs: Instagram's professional-account onboarding on the
-     * outside, the consent screen it forwards to on the inside.
-     *
-     * `enable_fb_login=0` is what keeps this to one screen — with it on,
-     * Instagram routes through Facebook Login, which asks the user to pick a
-     * Page and a linked account. `force_reauth=0` lets an already-signed-in
-     * browser skip the password.
-     */
     authorizeUrl: ({ keys, redirectUri, state }) => {
-      const skipConversion = process.env.INSTAGRAM_SKIP_PRO_CONVERSION === "1";
-
-      const consent = new URL(skipConversion ? AUTHORIZE_PLAIN : AUTHORIZE);
+      const consent = new URL(AUTHORIZE);
       consent.searchParams.set("client_id", keys.clientId);
       consent.searchParams.set("redirect_uri", redirectUri);
       consent.searchParams.set("response_type", "code");
       consent.searchParams.set("scope", SCOPES.join(","));
       consent.searchParams.set("state", state);
       consent.searchParams.set("enable_fb_login", "0");
-      consent.searchParams.set("force_reauth", "0");
-
-      if (skipConversion) return consent.toString();
-
-      // Built by hand rather than with URLSearchParams: that encodes spaces
-      // as "+", and Instagram prints the display name verbatim, plus signs
-      // and all. `show_business_login_info_screen` adds the screen explaining,
-      // in Instagram's own words, what a professional account is and that it
-      // stays free.
-      return (
-        `${CONVERT}?app_display_name=${encodeURIComponent(displayName())}` +
-        `&redirect_uri=${encodeURIComponent(consent.toString())}` +
-        `&show_business_login_info_screen=1`
-      );
+      return consent.toString();
     },
 
     async exchange({ keys, code, redirectUri }) {

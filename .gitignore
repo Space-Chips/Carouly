@@ -1,1 +1,28 @@
+# dependencies
 node_modules
+
+# build output
+#
+# `.next` must never be committed. Vercel builds from source, and a committed
+# build directory is read in preference to that build — including the prebuilt
+# edge bundle for the middleware, which is compiled against whatever the local
+# machine had. That is what produces
+# "The Edge Function middleware is referencing unsupported modules:
+# @clerk/shared/…" at deploy time: Vercel is bundling a stale artefact rather
+# than compiling middleware.ts.
+.next/
+out/
+build/
+
+# typescript incremental build cache — machine local, conflicts on every pull
+*.tsbuildinfo
+
+# deployment + local config
+.vercel
+.env*
+
+# clerk configuration (can include secrets)
+/.clerk/
+
+# macOS
+.DS_Store

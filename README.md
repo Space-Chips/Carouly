@@ -205,9 +205,9 @@ and every attempt — success or failure — is recorded in `posts`.
 
 ### One-click connect
 
-Instagram and TikTok are a single button. The user is handed to the platform's
-own login, and the callback stores a connection they never have to touch
-again:
+Instagram is currently the only customer-facing connection. The user presses a
+single button, signs in on Instagram, and comes back connected — with no IDs,
+tokens or developer setup to copy:
 
 ```
 Settings → /api/connect/{platform}          signed state + httpOnly nonce
@@ -218,42 +218,39 @@ Settings → /api/connect/{platform}          signed state + httpOnly nonce
 
 Instagram uses **Instagram API with Instagram Login** rather than Facebook
 Login — no Facebook Page, no Page picker, no account picker, just an Instagram
-login (the account has to be Business or Creator, a free toggle in the app).
+login. Publishing requires a free Business or Creator account. Meta does not
+provide a supported conversion URL that can resume an OAuth transaction, so a
+personal account is directed to Instagram's own professional-account switch
+and can reconnect immediately afterwards.
 The one-hour token it returns is immediately traded for a 60-day one, because
 a connection that dies before the first scheduled post isn't a connection.
 
-Both platforms' tokens are then kept alive automatically:
+The token is kept alive automatically:
 `ensureFreshCredentials` renews before every publish, and the hourly cron
 sweeps everything within eight days of expiry (`refreshExpiringConnections`).
-TikTok tokens live 24 hours and Instagram's 60 days, and both can only be
-refreshed while still valid — so the sweep runs early rather than on expiry. A
-refresh that fails inside the lead window is retried; one that fails on a dead
-token flips `needs_reauth` and Settings shows **Reconnect**.
+Instagram tokens live 60 days and can only be refreshed while still valid, so
+the sweep runs early rather than on expiry. A refresh that fails inside the
+lead window is retried; one that fails on a dead token flips `needs_reauth`
+and Settings shows **Reconnect**.
 
-Publishing also adapts to what the user actually granted rather than assuming:
-TikTok direct-posts when `video.publish` came back and drops a draft in the
-user's inbox when only `video.upload` did (which is all an app gets before
-TikTok's content-posting audit), and it asks `creator_info` which privacy
-levels the account allows instead of hardcoding one.
+Instagram requests only the basic profile and content-publishing permissions
+needed to connect an account and publish its carousels.
 
 Adding a third platform is one `oauth` block on its adapter — `lib/social/oauth.ts`
 owns the state signing, redirect URI, storage and refresh scheduling.
 
-**Setup.** Add both key pairs to `.env.local` (see `.env.example`) and register
-the redirect URIs below. Leave a pair blank and Instagram falls back to a token
-paste form while TikTok reports that it needs credentials — nothing crashes.
+**Setup.** Configure `INSTAGRAM_APP_ID` and `INSTAGRAM_APP_SECRET` in
+`.env.local` (see `.env.example`) and register the redirect URI below. If the
+app is not configured, Settings shows customers a simple availability message;
+it never asks them to paste credentials.
 
 ```
 {NEXT_PUBLIC_APP_URL}/api/connect/instagram/callback
-{NEXT_PUBLIC_APP_URL}/api/connect/tiktok/callback
 ```
 
-Both platforms require **https** redirect URIs, so testing connect locally
+Instagram requires an **https** redirect URI, so testing connect locally
 needs a tunnel (`ngrok http 3000`, `cloudflared tunnel`) with
-`NEXT_PUBLIC_APP_URL` pointed at it. TikTok additionally requires the domain
-serving the slide PNGs — the Supabase storage host — to be verified in its
-developer portal, or `content/init` is rejected with
-`url_ownership_unverified`.
+`NEXT_PUBLIC_APP_URL` pointed at it.
 
 Tokens are encrypted with AES-256-GCM (`lib/secrets.ts`) before they touch the
 database and are never returned to the browser; only display metadata (handle,

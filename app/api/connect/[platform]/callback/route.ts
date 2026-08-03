@@ -34,7 +34,7 @@ const explain = (platform: Platform, error: unknown): string => {
 
   if (platform === "instagram") {
     if (/business|professional|creator|not.*eligible/i.test(raw)) {
-      return "Instagram only allows posting from a Business or Creator account. Open Instagram → Settings → Account type, switch to Creator (it is free and reversible), then connect again.";
+      return "Instagram needs a free professional account to publish. In Instagram, go to Settings and activity → For professionals → Account type and tools → Switch to professional account. Then return here and connect Instagram again.";
     }
     if (/redirect|uri/i.test(raw)) {
       return `Instagram rejected the redirect URL. Add ${

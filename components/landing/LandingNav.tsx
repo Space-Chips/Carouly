@@ -1,6 +1,6 @@
 "use client";
 
-import { SignedIn, SignedOut, SignInButton, SignUpButton } from "@clerk/nextjs";
+import { Show, SignInButton, SignUpButton } from "@clerk/nextjs";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
@@ -146,7 +146,7 @@ export default function LandingNav() {
           </ul>
 
           <div className="hidden items-center gap-4 md:flex">
-            <SignedOut>
+            <Show when="signed-out">
               <SignInButton>
                 <button className="rounded-full text-sm text-dim outline-none transition-colors duration-700 ease-[cubic-bezier(0.32,0.72,0,1)] hover:text-bone focus-visible:ring-2 focus-visible:ring-ember">
                   Sign in
@@ -159,15 +159,15 @@ export default function LandingNav() {
                   Automate now
                 </button>
               </SignUpButton>
-            </SignedOut>
-            <SignedIn>
+            </Show>
+            <Show when="signed-in">
               <Link
                 href="/dashboard"
                 className={`rounded-full border px-3 py-2 text-sm font-semibold outline-none transition-all duration-700 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-ember focus-visible:ring-offset-2 focus-visible:ring-offset-black ${navCta}`}
               >
                 Back to autopilot
               </Link>
-            </SignedIn>
+            </Show>
           </div>
 
           {/* Two lines that rotate into an X in place. They never fade out and
@@ -232,7 +232,7 @@ export default function LandingNav() {
               open ? "translate-y-0 opacity-100" : "translate-y-12 opacity-0"
             }`}
           >
-            <SignedOut>
+            <Show when="signed-out">
               <SignUpButton>
                 <button className="w-full rounded-full bg-ember px-3 py-2 text-base font-semibold text-white outline-none transition-all duration-700 ease-[cubic-bezier(0.32,0.72,0,1)] hover:bg-ember-lit active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-ember">
                   Automate now
@@ -243,8 +243,8 @@ export default function LandingNav() {
                   Sign in
                 </button>
               </SignInButton>
-            </SignedOut>
-            <SignedIn>
+            </Show>
+            <Show when="signed-in">
               <Link
                 href="/dashboard"
                 onClick={() => setOpen(false)}
@@ -252,7 +252,7 @@ export default function LandingNav() {
               >
                 Back to autopilot
               </Link>
-            </SignedIn>
+            </Show>
           </li>
         </ul>
       </div>
