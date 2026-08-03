@@ -1,0 +1,25 @@
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  viewBox="0 0 32 32"
+  width="32"
+  height="32"
+  role="img"
+  aria-label="Carouly"
+>
+  <title>Carouly</title>
+  <!--
+    The favicon variant of public/logo.svg. It carries its own dark tile
+    rather than sitting transparent: a tab strip can be light or dark, and the
+    two faded slides behind the front one need a known background to read
+    against at 16px. The mark is scaled to 85% so the tile keeps a margin.
+
+    Next.js picks this file up by name — app/icon.svg emits the <link rel>
+    tag on its own, so nothing in layout.tsx references it.
+  -->
+  <rect width="32" height="32" rx="7" fill="#181818" />
+  <g fill="#c4552f" transform="translate(16 16) scale(0.85) translate(-16 -16)">
+    <rect x="24.75" y="9.5" width="4" height="13" rx="1.5" opacity="0.28" />
+    <rect x="17.75" y="7" width="5.5" height="18" rx="2" opacity="0.55" />
+    <rect x="3.25" y="4" width="13" height="24" rx="3.5" />
+  </g>
+</svg>

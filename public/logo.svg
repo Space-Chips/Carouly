@@ -1,0 +1,27 @@
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  viewBox="0 0 32 32"
+  width="32"
+  height="32"
+  role="img"
+  aria-label="Carouly"
+>
+  <title>Carouly</title>
+  <!--
+    A carousel seen edge-on: three slides fanned out, the front one live and
+    the two behind it queued. Depth is carried by size and opacity alone — no
+    strokes, no background — so the mark drops onto the dark app, a light
+    press kit or an OG image without a second file.
+
+    Geometry is on a 32-unit grid with every slide centred on y=16, which is
+    what keeps the steps even when the whole thing is rendered small. The
+    slides are held 1.5 units apart rather than overlapped: butted together
+    they fuse into one silhouette with darker bands, and the stack stops
+    reading as a stack.
+  -->
+  <g fill="#c4552f">
+    <rect x="24.75" y="9.5" width="4" height="13" rx="1.5" opacity="0.28" />
+    <rect x="17.75" y="7" width="5.5" height="18" rx="2" opacity="0.55" />
+    <rect x="3.25" y="4" width="13" height="24" rx="3.5" />
+  </g>
+</svg>

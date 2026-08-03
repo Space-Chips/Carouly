@@ -28,7 +28,9 @@ const kindLabel: Record<string, string> = {
  */
 export default function SampleCarousel({ width = 232 }: { width?: number }) {
   const options = listPresets().filter((option) => option.hasPreview);
-  const [preset, setPreset] = useState<PresetId>("nocturne");
+  // Opens on the look a new brand is actually given, so the first thing a
+  // visitor sees here is the thing they get if they never touch the picker.
+  const [preset, setPreset] = useState<PresetId>("grain");
 
   return (
     <div>
