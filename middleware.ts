@@ -36,23 +36,21 @@ export default clerkMiddleware(async (auth, request) => {
   }
 });
 
-// Keep every comment in this object a line comment, and keep "at" sigils out
-// of it. Vercel statically evaluates this export, and a block comment here is
-// parsed as JSDoc: an "at" word inside one becomes a JSDoc tag, whose tokens
-// the evaluator cannot read. It fails the deploy with the wonderfully opaque
-//   Error: Unhandled type: "ColonToken" :
-// long after `next build` has already succeeded locally.
 // No `runtime` key: this stays on the edge, which is the default through
-// Next 15. Do not move it to "nodejs" to chase a bundling error. That path
-// looks tempting and deploys green, but Vercel ships Node middleware as
-// unbundled source next to a traced node_modules, and Clerk's ESM build is
-// bundler-only — no "type" field of its own and six extensionless relative
-// imports — so real Node cannot load it either as CommonJS or as ESM. It
-// fails at runtime with MIDDLEWARE_INVOCATION_FAILED, after a clean build.
+// Next 15, and Next's own build bundles Clerk into the middleware correctly.
 //
-// What actually made the edge bundle resolve was "type": "module" in
-// package.json. Without it the bundler left every @clerk/shared subpath
-// external and the deploy was rejected for referencing unsupported modules.
+// A long run of deploy failures here — every @clerk/shared subpath reported as
+// an unsupported module, then MIDDLEWARE_INVOCATION_FAILED after switching to
+// the Node runtime, then `Error: Unhandled type: "ColonToken"` from a JSDoc
+// block in this object — all had a single cause that is not in this file: the
+// Vercel project's framework preset was "Other", not Next.js. With no preset,
+// Vercel ignores the Next builder and compiles this root middleware.ts with its
+// own standalone edge bundler, which statically evaluates the config export and
+// cannot resolve Clerk's bundler-only ESM build. `next build` succeeds locally
+// the whole time, because locally Next is doing the bundling and Vercel was not.
+//
+// The preset is now pinned in vercel.json ("framework": "nextjs"). If these
+// symptoms ever return, check that setting before changing anything here.
 export const config = {
   matcher: [
     // Skip Next.js internals and all static files, unless found in search params
