@@ -1,0 +1,378 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+
+  /* Marketing surface palette. Two accents on purpose: the warm ember is the
+     brand, the cold signal is measured data. They echo the accents the "Grain"
+     and "Nocturne" presets carry, so the page and the slides it advertises are
+     drawn from one set of inks.
+
+     Ember and ember-lit split by role rather than by state. Ember fills a
+     surface, where white type sits on it at 6.3:1. Ember-lit is the accent for
+     type on the page itself: ember as 12px letterspaced small caps measures
+     4.7:1 on black, which clears AA on paper and still reads as smudged at
+     that weight. Ember-lit is 7.9:1 and holds the line. */
+  --color-ink: var(--ink);
+  --color-raise: var(--raise);
+  --color-raise-2: var(--raise-2);
+  --color-hair: var(--hair);
+  --color-ember: var(--ember);
+  --color-ember-lit: var(--ember-lit);
+  --color-signal: var(--signal);
+  --color-bone: var(--bone);
+  --color-dim: var(--dim);
+  --color-warm-ink: var(--warm-ink);
+}
+
+:root {
+  --radius: 0.625rem;
+
+  --ink: #000000;
+  --raise: #181818;
+  --raise-2: #1f1f1f;
+  --hair: #272727;
+  --ember: #c4552f;
+  --ember-lit: #e08a4c;
+  --signal: #2bd9e4;
+  --bone: #ede9e3;
+  --dim: #8a857d;
+  --warm-ink: #131209;
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.145 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.145 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0 0);
+  --primary: oklch(0.205 0 0);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.97 0 0);
+  --secondary-foreground: oklch(0.205 0 0);
+  --muted: oklch(0.97 0 0);
+  --muted-foreground: oklch(0.556 0 0);
+  --accent: oklch(0.97 0 0);
+  --accent-foreground: oklch(0.205 0 0);
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: oklch(0.922 0 0);
+  --input: oklch(0.922 0 0);
+  --ring: oklch(0.708 0 0);
+  --chart-1: oklch(0.646 0.222 41.116);
+  --chart-2: oklch(0.6 0.118 184.704);
+  --chart-3: oklch(0.398 0.07 227.392);
+  --chart-4: oklch(0.828 0.189 84.429);
+  --chart-5: oklch(0.769 0.188 70.08);
+  --sidebar: oklch(0.985 0 0);
+  --sidebar-foreground: oklch(0.145 0 0);
+  --sidebar-primary: oklch(0.205 0 0);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.97 0 0);
+  --sidebar-accent-foreground: oklch(0.205 0 0);
+  --sidebar-border: oklch(0.922 0 0);
+  --sidebar-ring: oklch(0.708 0 0);
+}
+
+.dark {
+  /* Flat, true black. The product renders onto near-black slides, so anything
+     lighter behind them reads as a grey card floating on a grey page. */
+  --background: #000000;
+  --foreground: oklch(0.985 0 0);
+  --card: #181818;
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.205 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.922 0 0);
+  --primary-foreground: oklch(0.205 0 0);
+  --secondary: oklch(0.269 0 0);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.269 0 0);
+  --muted-foreground: oklch(0.708 0 0);
+  --accent: oklch(0.269 0 0);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.556 0 0);
+  --chart-1: oklch(0.488 0.243 264.376);
+  --chart-2: oklch(0.696 0.17 162.48);
+  --chart-3: oklch(0.769 0.188 70.08);
+  --chart-4: oklch(0.627 0.265 303.9);
+  --chart-5: oklch(0.645 0.246 16.439);
+  --sidebar: oklch(0.205 0 0);
+  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-primary: oklch(0.488 0.243 264.376);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.269 0 0);
+  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.556 0 0);
+}
+
+/* Slide typography.
+ *
+ * These families must match the `name` values in lib/fonts.ts, which feeds the
+ * same files to satori. SlideArt sets `fontFamily: "Anton" / "Barlow"`
+ * literally, so the dashboard preview and the exported PNG use identical type
+ * instead of the browser silently substituting a fallback. */
+@font-face {
+  font-family: "Anton";
+  src: url("/fonts/Anton-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Barlow";
+  src: url("/fonts/Barlow-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Barlow";
+  src: url("/fonts/Barlow-Medium.ttf") format("truetype");
+  font-weight: 500;
+  font-display: swap;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  main {
+    @apply max-w-7xl mx-auto pt-16 px-4;
+  }
+}
+
+/* ---------------------------------------------------------------- motion ---
+ * Three effects, used deliberately:
+ *   .rise      one-shot entrance — fade + 8px lift. Never loops.
+ *   .stagger-N delays a .rise so a group resolves in sequence, not at once.
+ *   .shimmer   a genuinely indeterminate wait (generation takes 30-60s and we
+ *              cannot measure its progress, so we must not fake a bar).
+ * Everything collapses to a still frame under prefers-reduced-motion.
+ */
+@layer utilities {
+  /* Mostly a fade. The 3px lift is there to give the fade a direction, not to
+     read as movement — an 8px travel made every page feel like it slid up. */
+  @keyframes rise {
+    from {
+      opacity: 0;
+      transform: translateY(3px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  @keyframes shimmer {
+    100% {
+      transform: translateX(100%);
+    }
+  }
+
+  @keyframes breathe {
+    0%,
+    100% {
+      opacity: 0.45;
+    }
+    50% {
+      opacity: 1;
+    }
+  }
+
+  .rise {
+    animation: rise 0.55s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  .stagger-1 { animation-delay: 60ms; }
+  .stagger-2 { animation-delay: 120ms; }
+  .stagger-3 { animation-delay: 180ms; }
+  .stagger-4 { animation-delay: 240ms; }
+  .stagger-5 { animation-delay: 300ms; }
+
+  /* A moving highlight across a placeholder surface. */
+  .shimmer {
+    position: relative;
+    overflow: hidden;
+  }
+  .shimmer::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    transform: translateX(-100%);
+    background-image: linear-gradient(
+      90deg,
+      transparent,
+      rgba(255, 255, 255, 0.06),
+      transparent
+    );
+    animation: shimmer 1.6s infinite;
+  }
+
+  .breathe {
+    animation: breathe 2s ease-in-out infinite;
+  }
+
+  /* ---------------------------------------------------------- marketing ---
+   * The only gradient anywhere on the site, and it is on glyphs rather than
+   * on a surface: hero headings run white to grey left to right, so the line
+   * loses weight as it travels and the eye is handed to the subheading.
+   */
+  .heading-ink {
+    background-image: linear-gradient(90deg, #ffffff, #9b9b9b);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    /* Clipped backgrounds cut descenders on the last line without this. */
+    padding-bottom: 0.08em;
+  }
+
+  .balance {
+    text-wrap: balance;
+  }
+
+  .pretty {
+    text-wrap: pretty;
+  }
+
+  /* Accordion open and close. Written here rather than relying on a plugin so
+     the FAQ animates identically regardless of what tw-animate-css ships. */
+  @keyframes accordion-open {
+    from {
+      height: 0;
+      opacity: 0;
+    }
+    to {
+      height: var(--radix-accordion-content-height);
+      opacity: 1;
+    }
+  }
+
+  @keyframes accordion-close {
+    from {
+      height: var(--radix-accordion-content-height);
+      opacity: 1;
+    }
+    to {
+      height: 0;
+      opacity: 0;
+    }
+  }
+
+  .accordion-panel[data-state="open"] {
+    animation: accordion-open 400ms cubic-bezier(0.32, 0.72, 0, 1);
+  }
+
+  .accordion-panel[data-state="closed"] {
+    animation: accordion-close 300ms cubic-bezier(0.32, 0.72, 0, 1);
+  }
+
+  /* Hover surface for large panels, tiles and list rows.
+   *
+   * Written as real CSS rather than `hover:bg-…/[0.045]` for two reasons:
+   * Tailwind only emits arbitrary opacity values it happens to find while
+   * scanning (an earlier accent version silently produced no rule at all),
+   * and a white tint at any opacity reads as grey haze on this palette. A
+   * trace of the preset's accent keeps the surface feeling lit instead of
+   * washed out, and the slow ease stops it from snapping on.
+   */
+  .surface {
+    transition:
+      background-color 600ms cubic-bezier(0.22, 1, 0.36, 1),
+      border-color 600ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .surface:hover {
+    background-color: rgba(196, 85, 47, 0.055);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .surface {
+      transition-duration: 1ms;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .rise,
+    .breathe {
+      animation: none;
+      opacity: 1;
+      transform: none;
+    }
+    .shimmer::after {
+      animation: none;
+      opacity: 0;
+    }
+    .accordion-panel[data-state="open"],
+    .accordion-panel[data-state="closed"] {
+      animation: none;
+    }
+  }
+}
+
+/* ------------------------------------------------------------------ clerk ---
+ * Two things the `appearance.variables` API cannot reach, so they are patched
+ * here against Clerk's own `cl-` classes (a documented, stable styling hook).
+ *
+ * 1. Clerk's inline icons carry no `fill`, so SVG's initial value applies and
+ *    they paint black — on a dark panel that reads as a missing icon rather
+ *    than a dark one. `currentColor` hands them back to whatever text colour
+ *    the surrounding element already resolved, which the variables above have
+ *    set correctly. Scoped to `cl-` so it cannot touch our own SVGs.
+ *
+ * 2. Provider logos are remote images from img.clerk.com, so no colour
+ *    variable applies to them at all. Apple's mark is supplied as solid black
+ *    and is invisible here. Only Apple is inverted: Google's is multicolour
+ *    and inverting it would produce a wrong-coloured Google logo, which is a
+ *    brand problem rather than a contrast one.
+ */
+:where([class*="cl-"]) svg {
+  fill: currentColor;
+}
+
+img.cl-providerIcon[src*="apple"] {
+  filter: invert(1);
+}
