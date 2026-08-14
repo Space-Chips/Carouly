@@ -3,11 +3,8 @@
 import { auth } from "@clerk/nextjs/server";
 import { revalidatePath } from "next/cache";
 
-import {
-  assertCanGenerate,
-  getEntitlement,
-  UpgradeRequiredError,
-} from "@/lib/billing";
+import { charge } from "@/lib/credits/ledger";
+import { CAROUSEL_COST } from "@/lib/credits/prices";
 import { createCarousel, runBrandDaily } from "@/lib/pipeline";
 import { renderCarouselAssets } from "@/lib/render";
 import { publishCarousel } from "@/lib/social";
@@ -40,7 +37,7 @@ const assertOwnsCarousel = async (carouselId: string) => {
     .maybeSingle();
 
   if (error) throw new Error(error.message);
-  if (!data) throw new Error("Carousel not found.");
+  if (!data) throw new Error("Post not found.");
 };
 
 export const getCarousels = async (): Promise<Carousel[]> => {
@@ -85,9 +82,16 @@ export const getCarousel = async (
 /** Generates a single carousel on demand, optionally from a chosen keyword. */
 export const generateCarouselNow = async (keywordId?: string) => {
   const userId = await requireUser();
+
   // Before the brand read, not after: generation costs a model call and an
-  // image render, so an out-of-quota user should be turned away for free.
-  await assertCanGenerate(userId);
+  // image render, so somebody who cannot afford it should be turned away for
+  // free rather than after two round trips.
+  await charge({
+    userId,
+    amount: CAROUSEL_COST,
+    gate: "carousel",
+    operation: "carousel",
+  });
 
   const brand = await requireBrand();
   const carouselId = await createCarousel(brand, { keywordId });
@@ -98,20 +102,19 @@ export const generateCarouselNow = async (keywordId?: string) => {
   return { carouselId };
 };
 
-/** Runs today's whole batch immediately, ignoring the schedule. */
+/**
+ * Runs today's whole batch immediately, ignoring the schedule.
+ *
+ * The batch charges per carousel inside the pipeline as each one is written,
+ * rather than for the whole run up front. A batch of five that runs dry after
+ * three has produced three carousels and been paid for three, which is the only
+ * arithmetic anybody would accept.
+ */
 export const runTodayNow = async () => {
-  const userId = await requireUser();
-  await assertCanGenerate(userId);
+  await requireUser();
 
   const brand = await requireBrand();
-  // A free account has an allowance, not a daily batch: running "today's
-  // batch" would spend the whole thing in one click. The quota check above
-  // lets a single carousel through, so the button still does something.
-  const { tier } = await getEntitlement();
-  const result = await runBrandDaily(brand, {
-    force: true,
-    limit: tier.limits.autopilot ? undefined : 1,
-  });
+  const result = await runBrandDaily(brand, { force: true });
 
   revalidatePath("/dashboard");
   revalidatePath("/carousels");
@@ -119,19 +122,17 @@ export const runTodayNow = async () => {
   return result;
 };
 
+/**
+ * Posting is free.
+ *
+ * It used to be the thing a plan bought, which made sense when a plan was the
+ * product. Under credits the rule is simpler and easier to defend: you pay for
+ * what costs us money to make, and handing a finished PNG to Instagram costs an
+ * API call. Charging for it twice — once to write it, once to post it — is a
+ * toll booth, not a price.
+ */
 export const publishNow = async (carouselId: string) => {
   await assertOwnsCarousel(carouselId);
-
-  // Writing carousels is what the free tier shows off; posting them to your
-  // accounts is what it sells. A free user can still download every slide.
-  const { tier } = await getEntitlement();
-
-  if (!tier.limits.autoPublish) {
-    throw new UpgradeRequiredError(
-      "publish",
-      "Publishing to a connected account needs a plan. Your slides are yours to download either way."
-    );
-  }
 
   const outcomes = await publishCarousel(carouselId);
 

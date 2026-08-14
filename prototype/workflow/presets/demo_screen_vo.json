@@ -1,0 +1,83 @@
+{
+  "id": "demo_screen_vo",
+  "name": "Product Demo + Narration",
+  "description": "Uses the brand's own captured product screenshots as the hero footage rather than generating fake UI, with narration spoken by the video model and a generated end card. The right template when the product is software and the real UI is the proof.",
+  "aspect": "9:16",
+  "duration_range": [12, 18],
+  "match": {
+    "creative_format": ["product-demo", "screen-recording"],
+    "preferred_types": ["Demo", "Animation"],
+    "funnel_stage": ["consideration", "conversion"],
+    "tone": ["plain-spoken", "confident"],
+    "settings": ["screen", "app-ui"]
+  },
+  "inputs": {
+    "promise": { "description": "The single mechanical claim the demo proves, e.g. 'one form, five feeds'.", "required": true },
+    "steps": { "description": "2-3 steps the viewer sees happen, as a list of strings.", "required": true },
+    "cta": { "description": "Closing call to action.", "required": true }
+  },
+  "output": "{{final}}",
+
+  "nodes": [
+    {
+      "id": "hero",
+      "type": "asset.pick",
+      "role": "product",
+      "index": 0
+    },
+    {
+      "id": "script",
+      "type": "llm.json",
+      "system": "You write demo narration for 9:16 video. You describe what is happening on screen in the fewest possible words. No feature lists, no 'introducing'.",
+      "prompt": "Brand: {{brand.brand_name}} — {{brand.brand_summary}}\nVoice: {{brand.voice_tone}}\n\nPromise: {{inputs.promise}}\nSteps: {{inputs.steps}}\nCTA: {{inputs.cta}}\n\nThe video is two shots: 8 seconds over the real product UI, then 6 seconds on an end card. A single narrator speaks over both.\n\n`demo_line` is spoken over the first shot: the promise and the steps, at most 18 words.\n`cta_line` is spoken over the end card: the call to action, at most 12 words.\n\n`end_card_prompt` is a still-image prompt for a clean vertical 9:16 end card in the brand's palette {{brand.facts.palette}}. Describe composition and colour only — no text rendering instructions.\n\n`on_screen_text`: exactly 2 captions, at most 5 words each — one per shot.",
+      "schema": {
+        "demo_line": "<=18 words, spoken over the product shot",
+        "cta_line": "<=12 words, spoken over the end card",
+        "end_card_prompt": "text-to-image prompt for the end card",
+        "on_screen_text": ["<=5 word caption", "<=5 word caption"]
+      },
+      "temperature": 0.7
+    },
+    {
+      "id": "motion",
+      "type": "fal.video",
+      "model": "video.veo3_fast_i2v",
+      "image_url": "{{hero}}",
+      "prompt": "Slow parallax push-in on the interface with subtle depth, a cursor gliding between elements. A warm, plain-spoken narrator says: \"{{script.demo_line}}\". Vertical 9:16, clean screen-recording feel, no added text on screen.",
+      "negative_prompt": "watermark, text overlay, subtitles, distorted UI, garbled interface text, cinematic colour grade",
+      "aspect_ratio": "9:16",
+      "duration": 8
+    },
+    {
+      "id": "end_card",
+      "type": "fal.image",
+      "model": "image.nano_banana",
+      "prompt": "{{script.end_card_prompt}}\n\nClean vertical 9:16 composition, flat brand colours, generous negative space in the lower third, no lettering.",
+      "negative_prompt": "text, lettering, watermark, logos, busy detail",
+      "aspect_ratio": "9:16"
+    },
+    {
+      "id": "end_motion",
+      "type": "fal.video",
+      "model": "video.veo3_fast_i2v",
+      "image_url": "{{end_card.url}}",
+      "prompt": "Very slow zoom on the held end card, minimal motion. The same narrator says: \"{{script.cta_line}}\". Vertical 9:16.",
+      "negative_prompt": "watermark, text overlay, subtitles",
+      "aspect_ratio": "9:16",
+      "duration": 6
+    },
+    {
+      "id": "cut",
+      "type": "video.concat",
+      "clips": ["{{motion}}", "{{end_motion}}"],
+      "clip_seconds": 8
+    },
+    {
+      "id": "final",
+      "type": "video.captions",
+      "video": "{{cut}}",
+      "lines": "{{script.on_screen_text}}",
+      "clip_seconds": [8, 6]
+    }
+  ]
+}

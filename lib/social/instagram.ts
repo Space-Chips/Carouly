@@ -207,7 +207,7 @@ export const instagram: Adapter<InstagramCredentials> = {
     const images = payload.imageUrls.slice(0, 10); // IG carousel maximum
 
     if (images.length < 2) {
-      throw new Error("Instagram carousels need at least 2 images.");
+      throw new Error("Instagram needs at least 2 images for a multi-image post.");
     }
 
     const childIds: string[] = [];
@@ -240,7 +240,7 @@ export const instagram: Adapter<InstagramCredentials> = {
 
     const container = await readJson(
       containerResponse,
-      "Instagram carousel container"
+      "Instagram multi-image container"
     );
 
     const publishResponse = await fetch(`${base}/${igUserId}/media_publish`, {
@@ -265,6 +265,67 @@ export const instagram: Adapter<InstagramCredentials> = {
       permalink = (await meta.json())?.permalink;
     } catch {
       // Permalink is cosmetic — never fail a successful post over it.
+    }
+
+    return { externalId: published.id, permalink };
+  },
+
+  /** Instagram Reels publishing for the agentic video flow. */
+  async publishVideo(credentials, payload) {
+    const { igUserId, accessToken } = credentials;
+    const base = credentials.apiBase?.trim() || FACEBOOK_GRAPH;
+    const caption = composeCaption(payload, 2200);
+
+    const container = await readJson(
+      await fetch(`${base}/${igUserId}/media`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          media_type: "REELS",
+          video_url: payload.videoUrl,
+          caption,
+          access_token: accessToken,
+        }),
+      }),
+      "Instagram Reel container"
+    );
+
+    // A Reel container is asynchronous. Publishing before it is FINISHED
+    // produces the particularly unhelpful IG error "media not ready".
+    for (let attempt = 0; attempt < 20; attempt++) {
+      const status = await readJson(
+        await fetch(
+          `${base}/${container.id}?fields=status_code,status&access_token=${encodeURIComponent(accessToken)}`,
+          { cache: "no-store" }
+        ),
+        "Instagram Reel status"
+      );
+
+      if (status.status_code === "ERROR") {
+        throw new Error(`Instagram Reel processing failed: ${status.status ?? "unknown error"}`);
+      }
+      if (status.status_code === "FINISHED") break;
+      if (attempt === 19) throw new Error("Instagram Reel processing timed out.");
+      await new Promise((resolve) => setTimeout(resolve, 3000));
+    }
+
+    const published = await readJson(
+      await fetch(`${base}/${igUserId}/media_publish`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ creation_id: container.id, access_token: accessToken }),
+      }),
+      "Instagram Reel publish"
+    );
+
+    let permalink: string | undefined;
+    try {
+      const meta = await fetch(
+        `${base}/${published.id}?fields=permalink&access_token=${encodeURIComponent(accessToken)}`
+      );
+      permalink = (await meta.json())?.permalink;
+    } catch {
+      // Cosmetic; the post itself already succeeded.
     }
 
     return { externalId: published.id, permalink };

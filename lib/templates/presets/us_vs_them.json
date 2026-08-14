@@ -1,0 +1,127 @@
+{
+  "id": "us_vs_them",
+  "name": "The Comparison",
+  "description": "Somebody names the usual way of doing it, then shows the alternative, then says which one they kept. A generated flat-lay of the two options sits between the two spoken beats, so the comparison is seen as well as claimed. For a brand whose buyer is already choosing between options and needs a reason, not an introduction.",
+  "aspect": "9:16",
+  "duration_range": [14, 20],
+  "match": {
+    "creative_format": ["comparison", "versus", "explainer", "product-demo"],
+    "preferred_types": ["Comparison", "Educational", "Product"],
+    "funnel_stage": ["consideration", "conversion"],
+    "tone": ["contrarian", "dry-wit", "confident", "plain-spoken"],
+    "settings": ["desk", "table-top", "small-shop", "home-office"]
+  },
+  "inputs": {
+    "theirs": { "description": "The usual way, described the way somebody doing it would describe it — not a straw man.", "required": true },
+    "ours": { "description": "What this brand does instead, in one mechanical sentence.", "required": true },
+    "verdict": { "description": "The line that settles it, ending in the call to action.", "required": true },
+    "presenter": { "description": "Casting note, e.g. 'man, 30s, warehouse manager, hi-vis over a hoodie'.", "required": false }
+  },
+  "output": "{{final}}",
+
+  "nodes": [
+    {
+      "id": "style",
+      "type": "const",
+      "value": {
+        "frame": "Shot on an iPhone front-facing camera, handheld, vertical 9:16, photorealistic. Realistic skin texture with visible pores, natural unevenness, no beauty filter. Available light from a window and a ceiling lamp, uneven shadows. Casual clothing with real creases. A real working space behind them with specific clutter. Slightly off-centre framing, mild lens distortion, subtle grain. Both eyes open, direct eye contact with the lens.",
+        "motion": "Keep the exact same person, hair, wardrobe and room as the reference image. Handheld phone feel with slight drift. The person talks to camera and uses their hands to weigh one thing against the other. Natural blinking and breathing. Continuous phone footage, no cuts.",
+        "negative": "eyes closed, mid-blink, looking away, head turned away, profile view, studio lighting, cinematic colour grade, airbrushed skin, plastic skin, beauty filter, CGI, 3D render, stock photo, polished commercial look, watermark, text overlay, subtitles, extra fingers, warped hands"
+      }
+    },
+    {
+      "id": "script",
+      "type": "llm.json",
+      "system": "You write comparison video for vertical feeds. You are fair to the other option — a comparison that mocks the alternative reads as an advert, and a comparison that describes it accurately reads as advice. You never name a competitor by name.",
+      "prompt": "Brand: {{brand.brand_name}} — {{brand.brand_summary}}\nVoice: {{brand.voice_tone}}\nValue props: {{brand.value_props}}\nAudience: {{brand.target_personas}}\nPalette: {{brand.facts.palette}}\n\nThe usual way: {{inputs.theirs}}\nWhat this brand does instead: {{inputs.ours}}\nThe verdict: {{inputs.verdict}}\nCasting note: {{inputs.presenter}}\n\nCast ONE person from the target audience and write two spoken beats with a still comparison between them.\n\n`actor` must pin identity down hard enough to repeat: apparent age, build, hair, face details, exact clothing including colour and fabric, and the specific room with named objects in it.\n\n`master_frame_prompt` is a still-image prompt for the opening frame of this person in that room, looking into the lens. No camera brand names, no quality adjectives, no text.\n\n`open_edit_prompt` is an EDIT instruction on the master frame for beat 1. Start with \"Same person, same hair, same clothes, same room, still looking into the lens.\" then set a sceptical expression and a hand held out to one side.\n\n`verdict_edit_prompt` is a second EDIT instruction for the final beat: the same person, settled and certain, hand on the other side.\n\n`open_line` is spoken in beat 1: the usual way, at most 14 words.\n`verdict_line` is spoken in the last beat: what they kept and the call to action, at most 16 words.\n\n`compare_card_prompt` is a still-image prompt for an overhead flat-lay on a plain surface showing the two options side by side as physical objects — the usual way on the left, this brand's way on the right. Use the brand palette. Describe objects, surface and light only. No lettering, no labels, no text of any kind.\n\n`on_screen_text`: exactly 3 captions, at most 5 words each — one per shot, and the middle one must name the difference.",
+      "schema": {
+        "actor": "one paragraph pinning down age, build, hair, face, exact clothing and the specific room",
+        "master_frame_prompt": "still-image prompt for the opening frame",
+        "open_edit_prompt": "edit instruction for the sceptical opening beat",
+        "verdict_edit_prompt": "edit instruction for the closing beat",
+        "open_line": "<=14 words",
+        "verdict_line": "<=16 words",
+        "compare_card_prompt": "text-to-image prompt for an overhead flat-lay of the two options",
+        "on_screen_text": ["<=5 words", "<=5 words", "<=5 words"]
+      },
+      "temperature": 0.8
+    },
+    {
+      "id": "master",
+      "role": "identity",
+      "type": "fal.image",
+      "model": "image.nano_banana",
+      "prompt": "{{script.master_frame_prompt}}\n\n{{style.frame}}",
+      "negative_prompt": "{{style.negative}}",
+      "aspect_ratio": "9:16"
+    },
+    {
+      "id": "open_frame",
+      "type": "fal.image_edit",
+      "model": "edit.nano_banana",
+      "image_url": "{{master.url}}",
+      "prompt": "{{script.open_edit_prompt}}\n\nPreserve identity, facial structure, hair, wardrobe, room and lighting from the reference image exactly. Change only expression, hand position and framing. Keep the eyes open and on the lens.",
+      "aspect_ratio": "9:16"
+    },
+    {
+      "id": "verdict_frame",
+      "type": "fal.image_edit",
+      "model": "edit.nano_banana",
+      "image_url": "{{master.url}}",
+      "prompt": "{{script.verdict_edit_prompt}}\n\nPreserve identity, facial structure, hair, wardrobe, room and lighting from the reference image exactly. Change only expression, hand position and framing. Keep the eyes open and on the lens.",
+      "aspect_ratio": "9:16"
+    },
+    {
+      "id": "compare_card",
+      "type": "fal.image",
+      "model": "image.nano_banana",
+      "prompt": "{{script.compare_card_prompt}}\n\nOverhead flat-lay, vertical 9:16, plain matte surface, soft even daylight, real shadows under the objects, generous space between the two groups. Photographic, not illustrated. No lettering anywhere in frame.",
+      "negative_prompt": "text, lettering, labels, logos, watermark, packaging copy, illustration, 3D render, busy background",
+      "aspect_ratio": "9:16"
+    },
+    {
+      "id": "open_clip",
+      "type": "fal.video",
+      "model": "video.veo3_fast_i2v",
+      "image_url": "{{open_frame.url}}",
+      "prompt": "The person says: \"{{script.open_line}}\".\n\n{{style.motion}}",
+      "negative_prompt": "{{style.negative}}",
+      "aspect_ratio": "9:16",
+      "duration": 6
+    },
+    {
+      "id": "compare_clip",
+      "type": "fal.video",
+      "model": "video.kling_i2v",
+      "silent": true,
+      "image_url": "{{compare_card.url}}",
+      "prompt": "Slow overhead drift across the flat-lay with a shallow rack of focus from the left group to the right group. A hand enters and taps the right-hand object once. Nobody speaks. No text appears.",
+      "negative_prompt": "talking, speech, text overlay, subtitles, lettering, watermark, warped hands, extra fingers",
+      "aspect_ratio": "9:16",
+      "duration": 4
+    },
+    {
+      "id": "verdict_clip",
+      "type": "fal.video",
+      "model": "video.veo3_fast_i2v",
+      "image_url": "{{verdict_frame.url}}",
+      "prompt": "The person says: \"{{script.verdict_line}}\".\n\n{{style.motion}}",
+      "negative_prompt": "{{style.negative}}",
+      "aspect_ratio": "9:16",
+      "duration": 6
+    },
+    {
+      "id": "cut",
+      "type": "video.concat",
+      "clips": ["{{open_clip}}", "{{compare_clip}}", "{{verdict_clip}}"],
+      "clip_seconds": 6
+    },
+    {
+      "id": "final",
+      "type": "video.captions",
+      "video": "{{cut}}",
+      "lines": "{{script.on_screen_text}}",
+      "clip_seconds": [6, 4, 6]
+    }
+  ]
+}

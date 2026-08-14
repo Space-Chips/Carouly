@@ -21,7 +21,7 @@ export const metadata: Metadata = {
     template: "%s · Carouly",
   },
   description:
-    "Describe your brand once. Every night it writes, designs and publishes a carousel that teaches something useful in your field.",
+    "Paste your web address once. Every night it writes, designs and publishes a short vertical post that teaches something useful in your field.",
   applicationName: "Carouly",
   openGraph: {
     siteName: "Carouly",
@@ -49,6 +49,22 @@ export default function RootLayout({
        on it. Dark themes have to flip it to white and let Clerk build the
        alpha scale down from there. */
     <ClerkProvider
+      /**
+       * Where the auth screens live.
+       *
+       * Without these two, `auth.protect()` in middleware.ts has no in-app page
+       * to send anyone to and falls back to Clerk's hosted Account Portal on
+       * `*.accounts.dev` — which is how a visitor who pasted their address into
+       * the hero ended up on a different domain, under a purple button, being
+       * asked to "Sign in to My Application". The pages under app/(auth) existed
+       * the whole time; nothing routed to them.
+       *
+       * Stated here rather than in .env.local on purpose: this is a fact about
+       * where the routes are, so it belongs with the code that defines them
+       * rather than in a file every deployment has to remember to set.
+       */
+      signInUrl="/sign-in"
+      signUpUrl="/sign-up"
       appearance={{
         variables: {
           colorNeutral: "white",

@@ -113,7 +113,43 @@ export const completeJson = async <T>({
     response_format: { type: "json_object" },
   });
 
-  const content: string = data?.choices?.[0]?.message?.content ?? "";
+  const choice = data?.choices?.[0];
+  const content: string = choice?.message?.content ?? "";
+
+  /**
+   * A completion stopped by the token ceiling ran out of room; it is not wrong.
+   *
+   * Checked before the empty-content case below, because both are the same fault
+   * and only this one names it. Two shapes reach here:
+   *
+   *  - Partial JSON. `parseJson`'s salvage slices to the last `}` and hands back
+   *    a string ending just after an array element, so `JSON.parse` reports
+   *    `Expected ',' or ']' after array element at position 11135` — which reads
+   *    as "the model wrote bad JSON" and sends `json()` into a retry at the same
+   *    ceiling for the same result. One brand kit that needed more room became
+   *    three truncated ones and four minutes, then an error naming the wrong
+   *    cause.
+   *  - Nothing at all. On a reasoning model the ceiling covers reasoning tokens,
+   *    so a large schema can spend the whole budget thinking and emit zero
+   *    characters. Measured on claude-sonnet-5: 900 completion tokens, 0 chars,
+   *    `finish_reason: length`. Reported as "empty completion" it looks like a
+   *    provider fault and is not retried usefully; reported as truncation it is
+   *    recoverable, which it is.
+   *
+   * `native_finish_reason` is checked too because OpenRouter passes the upstream
+   * provider's own wording through beside its normalised one.
+   */
+  if (
+    choice?.finish_reason === "length" ||
+    choice?.native_finish_reason === "max_tokens" ||
+    choice?.native_finish_reason === "length"
+  ) {
+    throw new TruncatedError(
+      `the answer was cut off at the ${maxTokens}-token ceiling ` +
+        `(${content.length} characters arrived` +
+        `${data?.usage?.completion_tokens ? `, ${data.usage.completion_tokens} tokens spent` : ""})`
+    );
+  }
 
   if (!content.trim()) {
     throw new Error("OpenRouter returned an empty completion.");
@@ -121,6 +157,19 @@ export const completeJson = async <T>({
 
   return parseJson<T>(content);
 };
+
+/**
+ * The model ran out of room, rather than getting the shape wrong.
+ *
+ * Its own type so a retry can respond by raising the ceiling instead of asking
+ * the identical question again.
+ */
+export class TruncatedError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "TruncatedError";
+  }
+}
 
 export const parseJson = <T>(content: string): T => {
   const cleaned = content

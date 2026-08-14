@@ -1,0 +1,118 @@
+{
+  "id": "before_after",
+  "name": "Before / After",
+  "description": "The same room, the same person, twice — filmed silent so the cut carries the change, then one spoken line at the end. The after frame is an edit of the before frame rather than a new scene, which is what makes the two read as one place at two moments instead of two stock shots. For anything whose value is visible.",
+  "aspect": "9:16",
+  "duration_range": [14, 18],
+  "match": {
+    "creative_format": ["before-after", "transformation", "product-demo"],
+    "preferred_types": ["Transformation", "UGC", "Product"],
+    "funnel_stage": ["consideration", "conversion"],
+    "tone": ["relieved", "empathetic", "plain-spoken", "warm"],
+    "settings": ["home", "workspace", "shop-floor", "desk", "kitchen"]
+  },
+  "inputs": {
+    "before": { "description": "The state the viewer recognises as their own, described physically — what it looks like, not how it feels.", "required": true },
+    "after": { "description": "The same place once the product has done its work, described physically.", "required": true },
+    "cta": { "description": "The one spoken line at the end.", "required": true },
+    "presenter": { "description": "Casting note, e.g. 'woman, 30s, small studio owner, cardigan'.", "required": false }
+  },
+  "output": "{{final}}",
+
+  "nodes": [
+    {
+      "id": "style",
+      "type": "const",
+      "value": {
+        "frame": "Vertical 9:16 photorealistic phone photograph of a real interior with a person in it. Available light only, one window, uneven shadows, honest colour. Real surfaces: worn wood, scuffed paint, cable, dust. Ordinary clothes with creases. Skin has visible texture and no retouching. Slightly off-centre handheld framing, mild lens distortion, subtle grain.",
+        "motion": "Keep the exact same person, wardrobe, room, camera position and framing as the reference image. Almost static shot, tiny handheld drift only. Small real movements: a hand resting, a slow breath, a curtain moving, light shifting. No dialogue, nobody speaks, mouth closed. Continuous phone footage, no cuts.",
+        "negative": "talking, speaking, open mouth mid-word, lip movement, eyes closed, studio lighting, cinematic colour grade, real-estate wide-angle, HDR, airbrushed skin, plastic skin, CGI, 3D render, stock photo, polished commercial look, watermark, text overlay, subtitles, extra fingers, warped hands"
+      }
+    },
+    {
+      "id": "script",
+      "type": "llm.json",
+      "system": "You direct silent transformation video for vertical feeds. You describe rooms the way somebody who lives in one does — named objects, specific mess, real light. The captions do all the talking, so they are short and they never explain the picture twice.",
+      "prompt": "Brand: {{brand.brand_name}} — {{brand.brand_summary}}\nVoice: {{brand.voice_tone}}\nAudience: {{brand.target_personas}}\n\nBefore: {{inputs.before}}\nAfter: {{inputs.after}}\nCTA: {{inputs.cta}}\nCasting note: {{inputs.presenter}}\n\nWrite a 3-shot cut: shot 1 is the before state, silent. Shot 2 is the same place after, silent. Shot 3 is the same person turning to the lens and saying one line.\n\n`actor` must pin identity down hard enough to repeat: apparent age, build, hair, face details, exact clothing including colour and fabric, and the specific room with named objects in it.\n\n`before_frame_prompt` is a still-image prompt for shot 1: the person in that room in the before state. Name the objects that make it the before state. No camera brand names, no quality adjectives, no text.\n\n`after_edit_prompt` is an EDIT instruction on that same frame. Start with \"Same person, same clothes, same room, same camera position.\" then change only what the product changes. The camera has not moved.\n\n`close_edit_prompt` is a second EDIT instruction on the after frame: the same person now looking straight into the lens, both eyes open, about to speak.\n\n`cta_line` is what they say in shot 3, at most 14 words.\n\n`on_screen_text`: exactly 3 captions, at most 4 words each. The first two must read as a pair.",
+      "schema": {
+        "actor": "one paragraph pinning down age, build, hair, face, exact clothing and the specific room",
+        "before_frame_prompt": "still-image prompt for the before state",
+        "after_edit_prompt": "edit instruction turning it into the after state",
+        "close_edit_prompt": "edit instruction turning the after frame into a look at the lens",
+        "cta_line": "<=14 words",
+        "on_screen_text": ["<=4 words", "<=4 words", "<=4 words"]
+      },
+      "temperature": 0.8
+    },
+    {
+      "id": "master",
+      "role": "identity",
+      "type": "fal.image",
+      "model": "image.nano_banana",
+      "prompt": "{{script.before_frame_prompt}}\n\n{{style.frame}}",
+      "negative_prompt": "{{style.negative}}",
+      "aspect_ratio": "9:16"
+    },
+    {
+      "id": "after_frame",
+      "type": "fal.image_edit",
+      "model": "edit.nano_banana",
+      "image_url": "{{master.url}}",
+      "prompt": "{{script.after_edit_prompt}}\n\nPreserve the person's identity, facial structure, hair, wardrobe, the room, the camera position and the lighting from the reference image exactly. The frame must look like the same photograph taken later, not a different photograph.",
+      "aspect_ratio": "9:16"
+    },
+    {
+      "id": "close_frame",
+      "type": "fal.image_edit",
+      "model": "edit.nano_banana",
+      "image_url": "{{after_frame.url}}",
+      "prompt": "{{script.close_edit_prompt}}\n\nPreserve identity, hair, wardrobe, room and light exactly. Change only the head angle, the gaze and the expression. Both eyes open, looking into the lens.",
+      "aspect_ratio": "9:16"
+    },
+    {
+      "id": "before_clip",
+      "type": "fal.video",
+      "model": "video.kling_i2v",
+      "silent": true,
+      "image_url": "{{master.url}}",
+      "prompt": "{{style.motion}}",
+      "negative_prompt": "{{style.negative}}",
+      "aspect_ratio": "9:16",
+      "duration": 5
+    },
+    {
+      "id": "after_clip",
+      "type": "fal.video",
+      "model": "video.kling_i2v",
+      "silent": true,
+      "image_url": "{{after_frame.url}}",
+      "prompt": "{{style.motion}}",
+      "negative_prompt": "{{style.negative}}",
+      "aspect_ratio": "9:16",
+      "duration": 5
+    },
+    {
+      "id": "close_clip",
+      "type": "fal.video",
+      "model": "video.veo3_fast_i2v",
+      "image_url": "{{close_frame.url}}",
+      "prompt": "The person looks into the lens and says: \"{{script.cta_line}}\". Keep the exact same person, wardrobe, room and framing as the reference image. Handheld phone feel, slight drift, natural blinking.",
+      "negative_prompt": "eyes closed, looking away, studio lighting, watermark, text overlay, subtitles, extra fingers, warped hands",
+      "aspect_ratio": "9:16",
+      "duration": 6
+    },
+    {
+      "id": "cut",
+      "type": "video.concat",
+      "clips": ["{{before_clip}}", "{{after_clip}}", "{{close_clip}}"],
+      "clip_seconds": 5
+    },
+    {
+      "id": "final",
+      "type": "video.captions",
+      "video": "{{cut}}",
+      "lines": "{{script.on_screen_text}}",
+      "clip_seconds": [5, 5, 6]
+    }
+  ]
+}

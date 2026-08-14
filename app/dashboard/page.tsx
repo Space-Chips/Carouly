@@ -5,13 +5,14 @@ import { auth } from "@clerk/nextjs/server";
 
 import GenerationPanel from "@/components/GenerationPanel";
 import StatusPill from "@/components/StatusPill";
-import UpgradeLink from "@/components/upgrade/UpgradeLink";
+import BuyLink from "@/components/credits/BuyLink";
 import { Button } from "@/components/ui/button";
 import { getBrand } from "@/lib/actions/brand.actions";
 import { getCarousels } from "@/lib/actions/carousel.actions";
 import { getConnections } from "@/lib/actions/connection.actions";
 import { getKeywords } from "@/lib/actions/keyword.actions";
-import { getEntitlement, getQuota } from "@/lib/billing";
+import { openAccount } from "@/lib/credits/ledger";
+import { CAROUSEL_COST, credits, formatCredits } from "@/lib/credits/prices";
 import { localHour } from "@/lib/pipeline";
 
 export default async function DashboardPage({
@@ -26,14 +27,19 @@ export default async function DashboardPage({
 
   if (!brand) redirect("/onboarding");
 
-  const [keywords, carousels, connections, entitlement, quota] =
-    await Promise.all([
-      getKeywords(),
-      getCarousels(),
-      getConnections(),
-      getEntitlement(),
-      getQuota(userId!),
-    ]);
+  const [keywords, carousels, connections, account] = await Promise.all([
+    getKeywords(),
+    getCarousels(),
+    getConnections(),
+    openAccount(userId!),
+  ]);
+
+  // How many days of the current schedule the balance covers. The number
+  // somebody on autopilot actually wants: not "how many credits", but "how long
+  // until this stops".
+  const perDay = brand.posts_per_day * CAROUSEL_COST;
+  const daysCovered = Math.floor(account.balance / Math.max(1, perDay));
+  const empty = account.balance < CAROUSEL_COST;
 
   // Mirrors nextKeyword() in lib/pipeline.ts: the approved queue first, then
   // the highest-ranked unreviewed keyword as a fallback.
@@ -51,21 +57,21 @@ export default async function DashboardPage({
 
   return (
     <main className="pb-24">
-      {/* The first thing a new subscriber sees. It names the one fact they are
-          least sure about — whether they have just been charged — and points
-          at the switch that makes the plan do anything. */}
-      {welcome && entitlement.isPaid ? (
+      {/* Straight after a top-up. It names the one fact somebody is least sure
+          about — that the credits arrived — and points at the switch that
+          starts spending them. */}
+      {welcome ? (
         <div className="rise mb-8 rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-5">
           <p className="text-sm font-medium">
-            You are on {entitlement.tier.name}.
+            {formatCredits(account.balance)} credits on the account.
           </p>
           <p className="pretty mt-1 max-w-2xl text-sm text-muted-foreground">
-            Turn on autopilot in Settings and the first carousel is written at
-            your posting hour tonight. Cancel any time from Settings, and if you
-            are still in the trial you are not charged.
+            Turn on autopilot in Settings and the first post is written at your
+            posting hour tonight. Nothing renews — the balance only moves when
+            something is made.
           </p>
           <Link
-            href="/settings#plan"
+            href="/settings#credits"
             className="mt-3 inline-block text-sm underline underline-offset-4 transition-colors hover:text-foreground"
           >
             Open settings
@@ -84,41 +90,36 @@ export default async function DashboardPage({
           autopilot={brand.autopilot}
           nextRun={nextRun}
           timezone={brand.timezone}
-          isPaid={entitlement.isPaid}
-          remaining={
-            quota.remaining === Infinity ? null : quota.remaining
-          }
+          balance={account.balance}
         />
       </div>
 
-      {/* The persistent touchpoint. It states the allowance as a fact rather
-          than nagging, and only turns into an ask once the allowance is spent
-          — a banner that sells on day one is a banner people learn to skip. */}
-      {!entitlement.isPaid ? (
-        <div
-          className={`rise stagger-1 mt-3 flex flex-wrap items-center justify-between gap-4 rounded-xl border p-5 ${
-            quota.exhausted
-              ? "border-ember/40 bg-ember/[0.06]"
-              : "border-white/10"
-          }`}
-        >
-          <div className="min-w-0">
-            <p className="text-sm font-medium">
-              {quota.exhausted
-                ? "You have used all three free carousels"
-                : `Free plan · ${quota.remaining} of ${quota.limit} carousels left`}
-            </p>
-            <p className="pretty mt-1 max-w-2xl text-sm text-muted-foreground">
-              {quota.exhausted
-                ? "Autopilot writes one every day and posts it for you. Seven days free, then $29 a month."
-                : "Autopilot and publishing to your accounts both need a plan. Everything you write stays downloadable."}
-            </p>
-          </div>
-          <UpgradeLink reason={quota.exhausted ? "quota" : "general"}>
-            {quota.exhausted ? "Start my free trial" : "See plans"}
-          </UpgradeLink>
+      {/* The persistent touchpoint. It states the balance as a fact and only
+          turns into an ask once it will not cover tomorrow — a banner that
+          sells on day one is a banner people learn to skip. */}
+      <div
+        className={`rise stagger-1 mt-3 flex flex-wrap items-center justify-between gap-4 rounded-xl border p-5 ${
+          empty ? "border-ember/40 bg-ember/[0.06]" : "border-white/10"
+        }`}
+      >
+        <div className="min-w-0">
+          <p className="text-sm font-medium">
+            {empty
+              ? "Out of credits"
+              : `${formatCredits(account.balance)} credits · about ${daysCovered} day${
+                  daysCovered === 1 ? "" : "s"
+                } at this schedule`}
+          </p>
+          <p className="pretty mt-1 max-w-2xl text-sm text-muted-foreground">
+            {empty
+              ? "Autopilot has nothing to spend, so it is skipping rather than generating. The schedule is still set and starts again after a top-up."
+              : `Each post costs ${credits(CAROUSEL_COST)} as it is written. Publishing is free.`}
+          </p>
         </div>
-      ) : null}
+        <BuyLink gate={empty ? "autopilot" : "general"}>
+          {empty ? "Top up" : "Buy credits"}
+        </BuyLink>
+      </div>
 
       {/* What autopilot will write next — makes the ranking model visible. */}
       {nextUp ? (
@@ -159,7 +160,7 @@ export default async function DashboardPage({
           tone={queued > 3 ? "good" : "warn"}
         />
         <Stat
-          label="Carousels"
+          label="Posts"
           value={String(carousels.length)}
           hint={`${publishedCount} published`}
         />
@@ -195,7 +196,7 @@ export default async function DashboardPage({
       {!activeConnections ? (
         <Callout
           title="No accounts connected"
-          body="Carousels are still written and rendered — connect an account when you want them to post themselves, or download the slides and post by hand."
+          body="Posts are still written and rendered — connect an account when you want them to post themselves, or download the slides and post by hand."
           href="/settings"
           cta="Connect an account"
         />
@@ -203,7 +204,7 @@ export default async function DashboardPage({
 
       <section className="rise stagger-3 mt-12">
         <div className="flex items-center justify-between">
-          <h2 className="text-xl font-semibold">Recent carousels</h2>
+          <h2 className="text-xl font-semibold">Recent posts</h2>
           {carousels.length ? (
             <Link
               href="/carousels"
@@ -219,7 +220,7 @@ export default async function DashboardPage({
             <p className="text-sm font-medium">Nothing written yet</p>
             <p className="mt-1 text-sm text-muted-foreground">
               Use <span className="text-foreground">Write one now</span> above
-              to see your first carousel end to end.
+              to see your first post end to end.
             </p>
           </div>
         ) : (

@@ -13,7 +13,7 @@ import { Brand } from "@/types";
 
 /**
  * Everything the generator needs to know about the brand. The three required
- * fields are the ones that shape every carousel: who you are, what the
+ * fields are the ones that shape every post: who you are, what the
  * product does, and which domain the tips should come from.
  */
 export default function BrandForm({
@@ -107,7 +107,7 @@ export default function BrandForm({
           placeholder="productivity and focus habits"
         />
         <p className="text-xs text-muted-foreground">
-          The subject your tips live in. Carousels teach this — never the product.
+          The subject your tips live in. Posts teach this — never the product.
         </p>
       </div>
 

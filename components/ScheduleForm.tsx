@@ -1,7 +1,5 @@
 "use client";
 
-import { Lock } from "@phosphor-icons/react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 
@@ -9,18 +7,19 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { updateSchedule } from "@/lib/actions/brand.actions";
-import { PaywallReason } from "@/lib/plans";
+import { CAROUSEL_COST, credits } from "@/lib/credits/prices";
 import { Brand } from "@/types";
 
-/** Autopilot controls: how many, what time, and whether to post by itself. */
-export default function ScheduleForm({
-  brand,
-  limits,
-}: {
-  brand: Brand;
-  /** What the current plan allows. Mirrors Limits in lib/billing.ts. */
-  limits: { postsPerDay: number; autopilot: boolean; autoPublish: boolean };
-}) {
+/**
+ * Autopilot controls: how many, what time, and whether to post by itself.
+ *
+ * Nothing on this form is locked. Every switch here used to carry a plan gate
+ * and a padlock; under credits there is nothing to unlock, because a schedule
+ * costs nothing to set and the posts it writes are charged as they are written.
+ * What replaced the padlock is a sentence saying what a day of this will cost —
+ * which is the thing somebody actually wants to know before turning it on.
+ */
+export default function ScheduleForm({ brand }: { brand: Brand }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -57,26 +56,16 @@ export default function ScheduleForm({
       <div className="grid sm:grid-cols-3 gap-4 sm:items-start">
         <div className="grid content-start gap-2">
           <Label htmlFor="posts_per_day" className="flex items-end sm:min-h-10">
-            Carousels per day
+            Posts per day
           </Label>
           <Input
             id="posts_per_day"
             name="posts_per_day"
             type="number"
             min={1}
-            // Free sits at 0, which is not a legal input value — the field
-            // stays usable and the two switches below it carry the gate.
-            max={Math.max(1, limits.postsPerDay)}
+            max={5}
             defaultValue={brand.posts_per_day}
           />
-          {limits.autopilot && limits.postsPerDay < 5 ? (
-            <Link
-              href="/upgrade?reason=posts_per_day"
-              className="text-xs text-dim underline underline-offset-4 transition-colors hover:text-muted-foreground"
-            >
-              Studio writes up to 5 a day
-            </Link>
-          ) : null}
         </div>
         <div className="grid content-start gap-2">
           <Label htmlFor="post_hour" className="flex items-end sm:min-h-10">
@@ -107,19 +96,17 @@ export default function ScheduleForm({
       <Toggle
         checked={autopilot}
         onChange={setAutopilot}
-        locked={!limits.autopilot}
-        reason="autopilot"
         label="Autopilot"
-        description="Generate today's carousels automatically, every day, at the hour above."
+        description={`Generate today's posts automatically, every day, at the hour above. Each one costs ${credits(
+          CAROUSEL_COST
+        )}, and it stops rather than overdrawing.`}
       />
 
       <Toggle
         checked={autoPublish}
         onChange={setAutoPublish}
-        locked={!limits.autoPublish}
-        reason="auto_publish"
         label="Auto-publish"
-        description="Post to every connected account without review. Leave off to approve each carousel yourself."
+        description="Post to every connected account without review. Free — you are only ever charged for making something, never for sending it."
       />
 
       {error ? <p className="text-sm text-red-400">{error}</p> : null}
@@ -134,73 +121,30 @@ export default function ScheduleForm({
   );
 }
 
-/**
- * A locked toggle is shown, not hidden.
- *
- * Hiding the two switches that are the whole product would leave a free
- * account looking like a smaller app rather than the same app with the engine
- * off. Showing them, greyed, with the price attached, is the paywall touchpoint
- * that costs nothing to place and speaks at exactly the moment someone reaches
- * for the feature.
- */
+/** A switch and what it will do, including what it will spend. */
 const Toggle = ({
   checked,
   onChange,
-  locked,
-  reason,
   label,
   description,
 }: {
   checked: boolean;
   onChange: (value: boolean) => void;
-  locked: boolean;
-  reason: PaywallReason;
   label: string;
   description: string;
-}) => {
-  const body = (
-    <>
-      <input
-        type="checkbox"
-        checked={locked ? false : checked}
-        disabled={locked}
-        onChange={(event) => onChange(event.target.checked)}
-        className="mt-1 size-4 accent-orange-500 disabled:opacity-40"
-      />
-      <span className="min-w-0 flex-1">
-        <span className="flex flex-wrap items-center gap-2">
-          <span className="text-sm font-medium">{label}</span>
-          {locked ? (
-            <span className="inline-flex items-center gap-1 rounded-full border border-hair px-2 py-0.5 text-xs text-dim">
-              <Lock weight="bold" aria-hidden className="size-3" />
-              Plan
-            </span>
-          ) : null}
-        </span>
-        <span className="mt-1 block text-xs text-muted-foreground">
-          {description}
-        </span>
+}) => (
+  <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-white/10 p-4">
+    <input
+      type="checkbox"
+      checked={checked}
+      onChange={(event) => onChange(event.target.checked)}
+      className="mt-1 size-4 accent-orange-500"
+    />
+    <span className="min-w-0 flex-1">
+      <span className="text-sm font-medium">{label}</span>
+      <span className="pretty mt-1 block text-xs text-muted-foreground">
+        {description}
       </span>
-    </>
-  );
-
-  if (!locked) {
-    return (
-      <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-white/10 p-4">
-        {body}
-      </label>
-    );
-  }
-
-  return (
-    <Link
-      href={`/upgrade?reason=${reason}`}
-      className="surface flex items-start gap-3 rounded-lg border border-white/10 p-4"
-    >
-      {body}
-      <span className="shrink-0 self-center text-xs font-medium text-ember-lit">
-        Unlock
-      </span>
-    </Link>
-  );
-};
+    </span>
+  </label>
+);

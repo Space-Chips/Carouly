@@ -1,0 +1,62 @@
+{
+  "nadia": {
+    "url": "/actors/nadia.jpg",
+    "madeAt": "2026-08-13",
+    "backend": "local"
+  },
+  "tom": {
+    "url": "/actors/tom.jpg",
+    "madeAt": "2026-08-13",
+    "backend": "local"
+  },
+  "priya": {
+    "url": "/actors/priya.jpg",
+    "madeAt": "2026-08-13",
+    "backend": "local"
+  },
+  "marcus": {
+    "url": "/actors/marcus.jpg",
+    "madeAt": "2026-08-13",
+    "backend": "local"
+  },
+  "maya": {
+    "url": "/actors/maya.jpg",
+    "madeAt": "2026-08-13",
+    "backend": "local"
+  },
+  "jonah": {
+    "url": "/actors/jonah.jpg",
+    "madeAt": "2026-08-13",
+    "backend": "local"
+  },
+  "amara": {
+    "url": "/actors/amara.jpg",
+    "madeAt": "2026-08-13",
+    "backend": "local"
+  },
+  "kai": {
+    "url": "/actors/kai.jpg",
+    "madeAt": "2026-08-13",
+    "backend": "local"
+  },
+  "greta": {
+    "url": "/actors/greta.jpg",
+    "madeAt": "2026-08-13",
+    "backend": "local"
+  },
+  "diego": {
+    "url": "/actors/diego.jpg",
+    "madeAt": "2026-08-13",
+    "backend": "local"
+  },
+  "isabelle": {
+    "url": "/actors/isabelle.jpg",
+    "madeAt": "2026-08-13",
+    "backend": "local"
+  },
+  "sam": {
+    "url": "/actors/sam.jpg",
+    "madeAt": "2026-08-13",
+    "backend": "local"
+  }
+}

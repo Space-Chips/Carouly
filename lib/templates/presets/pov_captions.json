@@ -1,0 +1,85 @@
+{
+  "id": "pov_captions",
+  "name": "POV, Captions Only",
+  "description": "Three silent shots of the thing being used, with the whole argument in the captions. Nobody speaks and no face is held across beats — this is the one shipped format built for a muted feed, where the words are read rather than heard. Choose it when the product is better looking at than listening to.",
+  "aspect": "9:16",
+  "duration_range": [12, 18],
+  "match": {
+    "creative_format": ["pov", "b-roll", "lifestyle", "aesthetic", "montage"],
+    "preferred_types": ["Lifestyle", "B-roll", "Product"],
+    "funnel_stage": ["awareness"],
+    "tone": ["calm", "aspirational", "understated", "cinematic"],
+    "settings": ["studio", "outdoors", "cafe", "home", "shop-floor"]
+  },
+  "inputs": {
+    "moment": { "description": "The moment being shown, as a POV: 'you open the shop before anyone else is up'.", "required": true },
+    "beats": { "description": "3 things the viewer sees happen, as a list of short strings. Physical actions, not feelings.", "required": true },
+    "cta": { "description": "The final caption. Short — it is read, not spoken.", "required": true }
+  },
+  "output": "{{final}}",
+
+  "nodes": [
+    {
+      "id": "style",
+      "type": "const",
+      "value": {
+        "frame": "Vertical 9:16 photorealistic phone photograph, first person point of view — the viewer's own hands and forearms enter the bottom of frame. Available light only, one direction, real shadows, honest colour with no grade. Real surfaces with wear on them. Shallow but ordinary depth of field, the kind a phone gives. Slight handheld tilt, subtle grain.",
+        "motion": "First person point of view, phone held in one hand, the other hand doing the action. Slight natural handheld movement and a small reframe. The action completes within the shot. Nobody speaks, no dialogue, no voices, no music cue. Continuous footage, no cuts.",
+        "negative": "talking, speech, faces, portrait, looking at camera, studio lighting, cinematic teal and orange grade, drone shot, tripod smoothness, gimbal glide, CGI, 3D render, stock photo, polished commercial look, watermark, text overlay, subtitles, lettering, extra fingers, warped hands, floating hands"
+      }
+    },
+    {
+      "id": "script",
+      "type": "llm.json",
+      "system": "You direct silent point-of-view video for vertical feeds. You describe actions and objects, never emotions, and you trust the picture. Captions are read at a glance, so they are short, specific, and never repeat what is already visible.",
+      "prompt": "Brand: {{brand.brand_name}} — {{brand.brand_summary}}\nVoice: {{brand.voice_tone}}\nAudience: {{brand.target_personas}}\nPalette: {{brand.facts.palette}}\n\nThe moment: {{inputs.moment}}\nWhat happens: {{inputs.beats}}\nFinal caption: {{inputs.cta}}\n\nWrite 3 silent point-of-view shots, 5 seconds each, in one continuous place and time. Shot 1 establishes the moment, shot 2 is the product doing its work, shot 3 is the result.\n\nFor each shot write:\n- `frame_prompt`: a still-image prompt for the first frame — first person, hands in shot, named objects, real light. No camera brand names, no quality adjectives, no text in the image.\n- `motion_prompt`: the action that completes in the 5 seconds after that frame. Physical only. Nobody speaks.\n\n`on_screen_text`: exactly 3 captions, at most 5 words each. Shot 1's caption starts with \"POV:\". The last caption is the call to action.",
+      "schema": {
+        "shots": [{ "frame_prompt": "still-image prompt, first person, hands in shot", "motion_prompt": "the physical action, silent", "seconds": 5 }],
+        "on_screen_text": ["POV: …", "<=5 words", "<=5 words"]
+      },
+      "temperature": 0.85
+    },
+    {
+      "id": "frames",
+      "type": "fal.image",
+      "foreach": "{{script.shots}}",
+      "as": "shot",
+      "model": "image.nano_banana",
+      "prompt": "{{shot.frame_prompt}}\n\n{{style.frame}}",
+      "negative_prompt": "{{style.negative}}",
+      "aspect_ratio": "9:16"
+    },
+    {
+      "id": "beats",
+      "type": "zip",
+      "shot": "{{script.shots}}",
+      "frame": "{{frames}}"
+    },
+    {
+      "id": "clips",
+      "type": "fal.video",
+      "foreach": "{{beats}}",
+      "as": "b",
+      "model": "video.kling_i2v",
+      "silent": true,
+      "image_url": "{{b.frame.url}}",
+      "prompt": "{{b.shot.motion_prompt}}\n\n{{style.motion}}",
+      "negative_prompt": "{{style.negative}}",
+      "aspect_ratio": "9:16",
+      "duration": 5
+    },
+    {
+      "id": "cut",
+      "type": "video.concat",
+      "clips": "{{clips}}",
+      "clip_seconds": 5
+    },
+    {
+      "id": "final",
+      "type": "video.captions",
+      "video": "{{cut}}",
+      "lines": "{{script.on_screen_text}}",
+      "clip_seconds": [5, 5, 5]
+    }
+  ]
+}

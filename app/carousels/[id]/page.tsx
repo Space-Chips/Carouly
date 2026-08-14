@@ -8,7 +8,6 @@ import StatusPill from "@/components/StatusPill";
 import { getBrand } from "@/lib/actions/brand.actions";
 import { getCarousel } from "@/lib/actions/carousel.actions";
 import { getConnections } from "@/lib/actions/connection.actions";
-import { getEntitlement } from "@/lib/billing";
 
 export default async function CarouselPage({
   params,
@@ -25,7 +24,6 @@ export default async function CarouselPage({
 
   const connections = await getConnections();
   const hasConnections = connections.some((c) => c.enabled);
-  const { tier } = await getEntitlement();
 
   return (
     <main className="pb-24">
@@ -33,7 +31,7 @@ export default async function CarouselPage({
         href="/carousels"
         className="text-sm text-muted-foreground underline transition-colors hover:text-foreground"
       >
-        ← All carousels
+        ← All posts
       </Link>
 
       <div className="rise mt-6 flex flex-wrap items-start justify-between gap-6">
@@ -56,7 +54,6 @@ export default async function CarouselPage({
         <CarouselControls
           carouselId={carousel.id}
           hasConnections={hasConnections}
-          canPublish={tier.limits.autoPublish}
         />
       </div>
 

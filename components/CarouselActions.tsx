@@ -3,7 +3,10 @@
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 
-import UpgradeLink from "@/components/upgrade/UpgradeLink";
+import Link from "next/link";
+
+import BuyLink from "@/components/credits/BuyLink";
+import { CAROUSEL_COST } from "@/lib/credits/prices";
 import { Button } from "@/components/ui/button";
 import {
   deleteCarousel,
@@ -13,16 +16,16 @@ import {
 } from "@/lib/actions/carousel.actions";
 
 /** Compact single-carousel trigger, for pages without the full Today panel. */
-export function WriteOneButton({ exhausted }: { exhausted: boolean }) {
+export function WriteOneButton({ broke }: { broke: boolean }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
-  if (exhausted) {
+  if (broke) {
     return (
-      <UpgradeLink reason="quota" variant="quiet">
-        Start my free trial
-      </UpgradeLink>
+      <BuyLink gate="carousel" need={CAROUSEL_COST} variant="quiet">
+        Out of credits — top up
+      </BuyLink>
     );
   }
 
@@ -58,12 +61,9 @@ export function WriteOneButton({ exhausted }: { exhausted: boolean }) {
 export function CarouselControls({
   carouselId,
   hasConnections,
-  canPublish,
 }: {
   carouselId: string;
   hasConnections: boolean;
-  /** False on the free plan, where slides are downloadable but not postable. */
-  canPublish: boolean;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -92,12 +92,13 @@ export function CarouselControls({
   return (
     <div className="grid gap-3 justify-items-start">
       <div className="flex flex-wrap gap-2">
-        {/* The gate replaces the button rather than disabling it: "Publish now"
-            greyed out reads as "you have no accounts connected", which is a
-            different problem with a different fix. */}
-        {canPublish ? (
+        {/* Publishing is free — the credits went on writing the post — so the
+            only thing that can stop it is having nowhere to send it. The link
+            replaces the button rather than disabling it, because a greyed
+            "Publish now" says nothing about what to do next. */}
+        {hasConnections ? (
           <Button
-            disabled={pending || !hasConnections}
+            disabled={pending}
             onClick={() =>
               run("publish", async () => {
                 const outcomes = await publishNow(carouselId);
@@ -115,9 +116,14 @@ export function CarouselControls({
             {busy === "publish" ? "Publishing…" : "Publish now"}
           </Button>
         ) : (
-          <UpgradeLink reason="publish" variant="quiet">
-            Publish to my accounts
-          </UpgradeLink>
+          /* No connected account, which is a setup step rather than a bill.
+             Publishing costs nothing — the credits went on writing the thing. */
+          <Link
+            href="/settings"
+            className="inline-flex items-center gap-1.5 text-sm font-medium text-ember-lit underline-offset-4 transition-colors duration-300 hover:underline"
+          >
+            Connect an account
+          </Link>
         )}
 
         <Button

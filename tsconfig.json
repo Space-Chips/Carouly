@@ -23,5 +23,8 @@
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
-  "exclude": ["node_modules"]
+  // The render server is a separate Node program, not part of the Next build.
+  // It runs under tsx with its own tsconfig and imports with explicit .ts
+  // extensions, which this config deliberately forbids.
+  "exclude": ["node_modules", "render-server", "prototype"]
 }

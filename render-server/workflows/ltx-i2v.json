@@ -1,0 +1,181 @@
+{
+  "_comment": [
+    "LTX-2.3 22B distilled, image-to-video WITH NATIVE AUDIO, in ComfyUI API format.",
+    "",
+    "The audio is the point. LTX-2 is an audio-visual model: it generates the",
+    "dialogue and the picture together, from the same sampling pass, which is why",
+    "the speech is actually in sync rather than dubbed on afterwards. The first",
+    "version of this graph decoded only the video half and threw the other away —",
+    "everything it produced was silent, and the pipeline's audio policy quietly",
+    "reclassified the whole local backend as draft-only because of it.",
+    "",
+    "The AV path, and why each node is here:",
+    "  audio_latent  LTXVEmptyLatentAudio  an empty audio latent the right length",
+    "  av            LTXVConcatAVLatent    video + audio into ONE latent, because",
+    "                                      the model samples both at once — this is",
+    "                                      what makes the mouth match the words",
+    "  split         LTXVSeparateAVLatent  back into two after sampling",
+    "  decode_audio  LTXVAudioVAEDecode    audio latent to a waveform",
+    "  video         CreateVideo           frames + waveform into one VIDEO",
+    "  save          SaveVideo             muxed mp4, audio included",
+    "",
+    "`sigmas` still takes the VIDEO latent, not the AV one: LTXVScheduler shifts",
+    "the noise schedule by token count as a proxy for resolution, and audio tokens",
+    "are not resolution. If the picture ever comes back burnt or washed out, this",
+    "is the first line to suspect.",
+    "",
+    "To fix any of it: open ComfyUI at :8188, load this, correct it, Export (API),",
+    "and save it back over this file. Nothing in the server needs to change.",
+    "",
+    "Distilled defaults: cfg 1.0 and few steps. A distilled model has the guidance",
+    "baked in, so running it at cfg 8 like a base model produces burnt, oversaturated",
+    "frames — the classic symptom if these numbers are wrong."
+  ],
+
+  "unet": {
+    "class_type": "UnetLoaderGGUF",
+    "inputs": { "unet_name": "{{unet}}" }
+  },
+
+  "clip": {
+    "class_type": "LTXAVTextEncoderLoader",
+    "inputs": {
+      "text_encoder": "{{text_encoder}}",
+      "ckpt_name": "{{text_projection}}",
+      "device": "default"
+    }
+  },
+
+  "vae": {
+    "class_type": "VAELoader",
+    "inputs": { "vae_name": "{{vae}}" }
+  },
+
+  "audio_vae": {
+    "class_type": "LTXVAudioVAELoader",
+    "inputs": { "ckpt_name": "{{audio_vae}}" }
+  },
+
+  "positive": {
+    "class_type": "CLIPTextEncode",
+    "inputs": { "clip": ["clip", 0], "text": "{{prompt}}" }
+  },
+
+  "negative": {
+    "class_type": "CLIPTextEncode",
+    "inputs": { "clip": ["clip", 0], "text": "{{negative_prompt}}" }
+  },
+
+  "first_frame": {
+    "class_type": "LoadImage",
+    "inputs": { "image": "{{image}}" }
+  },
+
+  "i2v": {
+    "class_type": "LTXVImgToVideo",
+    "inputs": {
+      "positive": ["positive", 0],
+      "negative": ["negative", 0],
+      "vae": ["vae", 0],
+      "image": ["first_frame", 0],
+      "width": "{{width}}",
+      "height": "{{height}}",
+      "length": "{{length}}",
+      "batch_size": 1,
+      "strength": 1.0
+    }
+  },
+
+  "audio_latent": {
+    "class_type": "LTXVEmptyLatentAudio",
+    "inputs": {
+      "frames_number": "{{length}}",
+      "frame_rate": "{{fps}}",
+      "batch_size": 1,
+      "audio_vae": ["audio_vae", 0]
+    }
+  },
+
+  "av": {
+    "class_type": "LTXVConcatAVLatent",
+    "inputs": {
+      "video_latent": ["i2v", 2],
+      "audio_latent": ["audio_latent", 0]
+    }
+  },
+
+  "conditioning": {
+    "class_type": "LTXVConditioning",
+    "inputs": {
+      "positive": ["i2v", 0],
+      "negative": ["i2v", 1],
+      "frame_rate": "{{fps}}"
+    }
+  },
+
+  "sigmas": {
+    "class_type": "LTXVScheduler",
+    "inputs": {
+      "steps": "{{steps}}",
+      "max_shift": 2.05,
+      "base_shift": 0.95,
+      "stretch": true,
+      "terminal": 0.1,
+      "latent": ["i2v", 2]
+    }
+  },
+
+  "sampler": {
+    "class_type": "KSamplerSelect",
+    "inputs": { "sampler_name": "euler" }
+  },
+
+  "sample": {
+    "class_type": "SamplerCustom",
+    "inputs": {
+      "model": ["unet", 0],
+      "add_noise": true,
+      "noise_seed": "{{seed}}",
+      "cfg": "{{cfg}}",
+      "positive": ["conditioning", 0],
+      "negative": ["conditioning", 1],
+      "sampler": ["sampler", 0],
+      "sigmas": ["sigmas", 0],
+      "latent_image": ["av", 0]
+    }
+  },
+
+  "split": {
+    "class_type": "LTXVSeparateAVLatent",
+    "inputs": { "av_latent": ["sample", 0] }
+  },
+
+  "decode": {
+    "class_type": "VAEDecode",
+    "inputs": { "samples": ["split", 0], "vae": ["vae", 0] }
+  },
+
+  "decode_audio": {
+    "class_type": "LTXVAudioVAEDecode",
+    "inputs": { "samples": ["split", 1], "audio_vae": ["audio_vae", 0] }
+  },
+
+  "video": {
+    "class_type": "CreateVideo",
+    "inputs": {
+      "images": ["decode", 0],
+      "fps": "{{fps}}",
+      "audio": ["decode_audio", 0]
+    }
+  },
+
+  "save": {
+    "class_type": "SaveVideo",
+    "inputs": {
+      "video": ["video", 0],
+      "filename_prefix": "carouly/{{stem}}",
+      "format": "mp4",
+      "codec": "auto"
+    }
+  }
+}

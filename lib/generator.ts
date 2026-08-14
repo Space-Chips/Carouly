@@ -74,7 +74,7 @@ Give ${count} seed topics inside "${brand.domain}" that this audience would sear
     .slice(0, count);
 };
 
-const KEYWORD_SYSTEM = `You are an SEO and content strategist who builds keyword banks for social carousels.
+const KEYWORD_SYSTEM = `You are an SEO and content strategist who builds keyword banks for short social posts.
 
 You estimate three numbers per keyword and you are honest about them:
 - volume: estimated monthly global search volume (integer). Long-tail phrases are usually 50-2000; head terms 10000+.
@@ -84,7 +84,7 @@ You estimate three numbers per keyword and you are honest about them:
 Return ONLY a JSON object of the form:
 {"keywords":[{"keyword":"...","angle":"...","intent":"informational|commercial|transactional","volume":0,"difficulty":0,"relevance":0}]}
 
-"angle" is one sentence describing the specific, concrete, useful insight a carousel on this keyword should teach. It must be genuinely useful on its own and must NOT be about the product.`;
+"angle" is one sentence describing the specific, concrete, useful insight a post on this keyword should teach. It must be genuinely useful on its own and must NOT be about the product.`;
 
 /**
  * Fallback path: the model invents the phrases as well as the scores. Used
@@ -101,7 +101,7 @@ Produce ${count} keywords in the ${brand.domain} domain that this brand's audien
 
 Rules:
 - Favour specific, long-tail, low-to-medium difficulty topics over head terms.
-- Every keyword must be a topic where a 3-slide carousel can deliver real value: a habit, a tactic, a mistake to avoid, a rule of thumb, a counter-intuitive insight.
+- Every keyword must be a topic where three short slides can deliver real value: a habit, a tactic, a mistake to avoid, a rule of thumb, a counter-intuitive insight.
 - No keyword may be about the brand, the product, or a competitor.
 - No duplicates or near-duplicates.`;
 
@@ -128,7 +128,7 @@ Rules:
 const carouselSystem = (brand: Brand) => {
   const preset = getPreset(brand.preset);
 
-  return `You write short-form social carousels that teach something useful and convert at the end.
+  return `You write short-form social posts that teach something useful and convert at the end.
 
 TONE: ${preset.tone}
 
@@ -167,14 +167,14 @@ export const writeCarousel = async (
   // front meant generating text that was thrown away or went stale.
   const prompt = `${brandBrief(brand)}
 
-Keyword to build this carousel around: "${keyword.keyword}"
+Keyword to build this post around: "${keyword.keyword}"
 ${
   keyword.angle
     ? `Angle to take: ${keyword.angle}`
-    : `Decide the angle yourself: pick the single most concrete, useful insight someone searching this phrase would want, and build the carousel around it.`
+    : `Decide the angle yourself: pick the single most concrete, useful insight someone searching this phrase would want, and build the post around it.`
 }
 
-Write the carousel.`;
+Write the post.`;
 
   const generated = await completeJson<GeneratedCarousel>({
     system: carouselSystem(brand),

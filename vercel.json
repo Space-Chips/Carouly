@@ -5,6 +5,11 @@
     {
       "path": "/api/cron/daily",
       "schedule": "0 0 * * *"
+    },
+    {
+      "//": "The render queue's backstop, not its engine. Jobs are normally started by a nudge the moment they are queued, and kept moving by the studio polling them; this only catches one whose worker died with nobody watching. Daily is all the Hobby plan allows, which is enough for a safety net.",
+      "path": "/api/render/worker",
+      "schedule": "0 1 * * *"
     }
   ]
 }

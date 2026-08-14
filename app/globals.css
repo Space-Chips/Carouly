@@ -62,6 +62,37 @@
   --color-bone: var(--bone);
   --color-dim: var(--dim);
   --color-warm-ink: var(--warm-ink);
+
+  /* Marketing paper set.
+   *
+   * The app renders onto near-black slides and stays dark. The marketing site
+   * runs on paper instead: the work it advertises is now short vertical video,
+   * and a wall of saturated 9:16 frames needs a quiet, light ground to read as
+   * energy rather than as noise. These are separate tokens rather than a theme
+   * flip so both surfaces can exist in one build without either one having to
+   * win a cascade fight.
+   *
+   * Nothing here is a gradient. The colour on the marketing page comes from the
+   * work itself — the video frames and their category chips — so every surface
+   * underneath them is flat. */
+  --color-paper: var(--paper);
+  --color-paper-lift: var(--paper-lift);
+  --color-paper-sunk: var(--paper-sunk);
+  --color-rule: var(--rule);
+  --color-graphite: var(--graphite);
+  --color-mute: var(--mute);
+
+  /* Run states. Three, and only three: a stage is running, it finished, or it
+     failed. The studio resists inventing a fourth — "partially degraded" is a
+     sentence in the transcript, not a colour, because a colour nobody can name
+     is worse than no signal at all.
+
+     Ember is reused for "running" rather than given a fourth ink. It is already
+     the brand's only warm mark and it is already the thing that breathes on this
+     site, so a pulsing ember dot reads as "alive" without teaching anyone a new
+     vocabulary. */
+  --color-ok: var(--ok);
+  --color-fail: var(--fail);
 }
 
 :root {
@@ -77,6 +108,36 @@
   --bone: #ede9e3;
   --dim: #8a857d;
   --warm-ink: #131209;
+
+  /* Paper is a neutral grey rather than a cream. Cream plus a terracotta
+     accent is the house style of every generated marketing page this year, and
+     the ember below only ever appears as a small mark — a chip, a dot, a rail —
+     never as a filled surface, which is what keeps the two apart. */
+  --paper: #f4f3f1;
+  --paper-lift: #ffffff;
+  --paper-sunk: #e9e7e3;
+  --rule: #e0ddd8;
+  --graphite: #0c0a09;
+  --mute: #6e6862;
+
+  /* Deep enough to clear 4.5:1 on paper as small text, which is the only size
+     either of these is ever set at — they label a duration or an error, never a
+     heading. */
+  --ok: #2f6d4f;
+  --fail: #b31b3a;
+
+  /* Easing, named once.
+   *
+   * Three curves cover everything here, chosen by what the motion is doing
+   * rather than by where it appears: things arriving decelerate, things leaving
+   * accelerate, things moving between two places do both. Exits run at about
+   * three quarters of the matching enter, because a dismissal that takes as long
+   * as an arrival reads as reluctance. */
+  --ease-out: cubic-bezier(0.33, 1, 0.68, 1);
+  --ease-in: cubic-bezier(0.32, 0, 0.67, 0);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  /* The long, soft one, for panels and anything crossing the whole screen. */
+  --ease-glide: cubic-bezier(0.32, 0.72, 0, 1);
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);
@@ -180,6 +241,12 @@
   body {
     @apply bg-background text-foreground;
   }
+  /* The app is dark and the marketing site is on paper, so overscroll at the
+     top or bottom of the landing page would otherwise flash the app's black
+     through. The page declares its own ground and the body follows it. */
+  body:has([data-surface="paper"]) {
+    background-color: var(--paper);
+  }
   main {
     @apply max-w-7xl mx-auto pt-16 px-4;
   }
@@ -270,6 +337,353 @@
     padding-bottom: 0.08em;
   }
 
+  /* The same idea on paper: black to grey, left to right, so a headline set at
+     display size loses weight as it travels and hands the eye down to the
+     subheading rather than shouting the whole line at one volume. */
+  .heading-paper {
+    background-image: linear-gradient(90deg, #000000, #666666);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    padding-bottom: 0.08em;
+  }
+
+  /* ------------------------------------------------------------- hero ---
+   * The hero is the one place on the site that is not flat.
+   *
+   * Everything below it sits on plain paper so the video frames carry the
+   * colour. Up here a very wide, very pale wash — warm rose bleeding in from
+   * the left, cold periwinkle from the right — gives the fan something to
+   * float on. It is three radials rather than a linear ramp: a linear gradient
+   * across a 1440px band reads as a stripe, radials keep it shapeless.
+   */
+  .hero-wash {
+    --hero-ink: #f5f5f5;
+    position: relative;
+    isolation: isolate;
+    background-color: #050505;
+    transition: background-color 600ms ease;
+    height: 100svh;
+    min-height: 38rem;
+    overflow: hidden;
+  }
+
+  .hero-content {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transform: translateY(clamp(0px, calc(760px - 100svh), 36px));
+    transition: transform 600ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .hero-content-moved {
+    transform: translateY(calc(clamp(0px, calc(760px - 100svh), 36px) - clamp(0px, calc(100svh - 700px), 56px)));
+  }
+
+  /* The copy belongs to the composer, not to the page's normal flow. Keeping
+     both in one centered anchor is what holds their spacing steady while the
+     stage changes and the card lead-in begins. */
+  .hero-copy {
+    position: relative;
+  }
+
+  .hero-headings {
+    position: absolute;
+    inset-inline: 0;
+    bottom: calc(100% + clamp(12px, 2vh, 28px));
+    overflow: visible;
+  }
+
+  .hero-fan {
+    position: absolute;
+    inset-inline: 0;
+    /* The cards deliberately run beyond the bottom edge. This creates a clear
+       pause after the composer and avoids exposing a bare canvas below them. */
+    top: calc(50% + 174px);
+    height: calc(50% - 174px);
+    overflow: hidden;
+  }
+
+  .hero-fan .hero-card-stage {
+    height: 100%;
+  }
+
+  .hero-fan .hero-card {
+    /* Fill the lower stage at taller desktop viewports. The aspect ratio stays
+       intact; this only prevents the canvas from ending before its cards do. */
+    width: max(clamp(9.5rem, 19vw, 15.1875rem), calc((50svh - 116px) * 9 / 16));
+  }
+
+  .hero-wash::before {
+    content: "";
+    position: absolute;
+    z-index: -1;
+    inset: 0;
+    opacity: 0;
+    background-color: var(--paper);
+    /* Sized in percentages rather than rem so the wash scales with the section.
+       Fixed radii looked right at 1440 and swamped a phone, where a 56rem
+       radial is wider than the screen and reads as flat grey. */
+    background-image:
+      radial-gradient(
+        70% 46% at 12% 8%,
+        rgba(233, 176, 158, 0.34),
+        transparent 68%
+      ),
+      radial-gradient(
+        64% 44% at 92% 34%,
+        rgba(150, 158, 226, 0.3),
+        transparent 66%
+      ),
+      radial-gradient(
+        56% 36% at 52% 0%,
+        rgba(255, 255, 255, 0.92),
+        transparent 60%
+      );
+    transition: opacity 1s ease 200ms;
+  }
+
+  .hero-wash.hero-lit {
+    --hero-ink: var(--graphite);
+    background-color: var(--paper);
+  }
+
+  .hero-wash.hero-lit::before {
+    opacity: 1;
+  }
+
+  .hero-subtitle {
+    color: #a3a3a3;
+    transition: color 600ms ease;
+  }
+
+  .hero-lit .hero-subtitle {
+    color: var(--mute);
+  }
+
+  /* Exact hero-composer arrival from the reference: it starts lower and
+     slightly smaller, then resolves before the stage lights turn on. */
+  @keyframes hero-composer-in {
+    from {
+      opacity: 0;
+      transform: translateY(24px) scale(0.96);
+    }
+  }
+
+  .hero-composer-in {
+    animation: hero-composer-in 550ms cubic-bezier(0.22, 1, 0.36, 1) 200ms both;
+  }
+
+  .hero-wash:not(.hero-lit) .hero-composer-in form {
+    background-color: #101010;
+    border-color: rgb(94 160 255 / 22%);
+    box-shadow: 0 0 0 1px rgb(94 160 255 / 18%), 0 36px 90px rgb(0 0 0 / 65%), 0 0 60px rgb(94 160 255 / 20%);
+  }
+
+  .hero-wash:not(.hero-lit) .hero-composer-in input {
+    color: #f5f5f5;
+  }
+
+  .hero-wash:not(.hero-lit) .hero-composer-in input::placeholder,
+  .hero-wash:not(.hero-lit) .hero-composer-in p {
+    color: #8a8a8a;
+  }
+
+  .hero-stage-sheen {
+    position: absolute;
+    inset: 0;
+    width: 75%;
+    background: linear-gradient(100deg, transparent 0%, rgb(94 160 255 / 15%) 35%, rgb(155 123 232 / 32%) 52%, rgb(240 160 122 / 15%) 70%, transparent 100%);
+    filter: blur(2px);
+    mix-blend-mode: screen;
+    animation: hero-stage-sheen 700ms cubic-bezier(0.4, 0, 0.2, 1) 250ms both;
+  }
+
+  @keyframes hero-stage-sheen {
+    from { transform: translateX(-130%); }
+    to { transform: translateX(130%); }
+  }
+
+  @keyframes hero-prompt-row {
+    from { opacity: 0; transform: translateY(8px); }
+  }
+
+  .hero-composer-primary {
+    animation: hero-prompt-row 450ms ease-out 250ms both;
+  }
+
+  .hero-composer-actions {
+    animation: hero-prompt-row 450ms ease-out 380ms both;
+  }
+
+  /* The hero's page-load signature: the title sits still, then an aurora
+     passes through it once and returns at a much gentler cadence. The colored
+     band is deliberately narrow so it reads as light moving over ink rather
+     than as permanent gradient text. */
+  @keyframes hero-text-sweep {
+    from { background-position: 100% 0; }
+    to { background-position: 0 0; }
+  }
+
+  @keyframes hero-text-resweep {
+    0%, 62% { background-position: 130% 0; }
+    100% { background-position: -30% 0; }
+  }
+
+  .hero-sweep {
+    background-image: linear-gradient(
+      90deg,
+      var(--hero-ink) 0%,
+      var(--hero-ink) 38%,
+      #5ea0ff 44%,
+      #9b7be8 50%,
+      #f0a07a 56%,
+      #d98a5e 60%,
+      var(--hero-ink) 66%,
+      var(--hero-ink) 100%
+    );
+    background-position: 100% 0;
+    background-size: 300% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    animation:
+      hero-text-sweep 850ms cubic-bezier(0.455, 0.03, 0.515, 0.955) 950ms both,
+      hero-text-resweep 3s cubic-bezier(0.455, 0.03, 0.515, 0.955) 1.8s infinite;
+  }
+
+  @keyframes hero-caret-sweep {
+    0% { background-position: 50% -30%; }
+    60%, 100% { background-position: 50% 130%; }
+  }
+
+  @keyframes hero-caret-pulse {
+    0%, 100% { opacity: 1; box-shadow: 0 0 0 transparent; }
+    50% { opacity: 0.55; box-shadow: 0 0 10px 1.5px rgb(155 123 232 / 38%); }
+  }
+
+  .hero-caret {
+    border-radius: 2px;
+    background-image: linear-gradient(165deg, #5ea0ff 0%, #9b7be8 34%, #f0a07a 58%, #5ea0ff 100%);
+    background-size: 100% 320%;
+    animation:
+      hero-caret-sweep 2.8s cubic-bezier(0.6, 0, 0.85, 0) infinite,
+      hero-caret-pulse 1.6s ease-in-out infinite;
+  }
+
+  /* The last word of the headline drifts off the ink and back again. It is the
+     single moving thing above the fold once the fan has settled, so it is slow
+     enough to be noticed only on the second look, and it always returns to the
+     text colour rather than resting on a colour — a headline permanently in
+     accent blue reads as a link. */
+  @keyframes word-drift {
+    0%,
+    10% {
+      color: var(--graphite);
+    }
+    32%,
+    42% {
+      color: #3b6fd4;
+    }
+    62%,
+    72% {
+      color: #6a5fd6;
+    }
+    94%,
+    100% {
+      color: var(--graphite);
+    }
+  }
+
+  .word-drift {
+    animation: word-drift 11s cubic-bezier(0.32, 0.72, 0, 1) infinite;
+  }
+
+  /* The fan deals itself out on load: every frame starts squared up and low,
+     then swings to the rotation it holds.
+
+     Deliberately only a `from` keyframe. The resting transform is the inline
+     style on each card, and an unspecified `to` resolves to exactly that, so
+     the animation cannot drift out of step with the layout and dropping it
+     under reduced motion leaves the fan correctly arranged rather than flat. */
+  @keyframes deal {
+    from {
+      transform: translateY(7rem) rotate(0deg) scale(0.94);
+      opacity: 0;
+    }
+  }
+
+  .deal {
+    animation: deal 1s cubic-bezier(0.32, 0.72, 0, 1) both;
+  }
+
+  /* The hero cards follow the source choreography rather than a generic fan:
+     five cards expose their assigned slots in sequence while the sixth travels
+     left → centre → right. Its opacity intentionally holds at zero until the
+     final 12% of the move, exactly as the reference does. */
+  .hero-card {
+    transform: translate(calc(-50% + var(--card-x)), var(--card-y)) rotate(var(--card-rotate)) scale(var(--card-scale));
+    opacity: 0;
+    transform-origin: center;
+    will-change: transform, opacity;
+  }
+
+  @keyframes hero-card-fade {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  .hero-cards-live .hero-card-static {
+    animation: hero-card-fade 180ms ease-out var(--card-delay) both;
+  }
+
+  .hero-cards-live .hero-card-static:nth-child(n + 3) {
+    animation-duration: 60ms;
+  }
+
+  @keyframes hero-card-lead {
+    0% {
+      transform: translate(calc(-50% - 540px), 22px) rotate(-10deg) scale(.9);
+      opacity: 0;
+    }
+    50% {
+      transform: translate(calc(-50% - 108px), -4px) rotate(-2deg) scale(.98);
+      opacity: 0;
+    }
+    88% {
+      opacity: 0;
+    }
+    100% {
+      transform: translate(calc(-50% + 540px), 22px) rotate(10deg) scale(.9);
+      opacity: 1;
+    }
+  }
+
+  .hero-cards-live .hero-card-lead {
+    animation: hero-card-lead 1.2s cubic-bezier(0.22, 1, 0.36, 1) 2.3s both;
+  }
+
+  /* The reel rail. One copy of the track scrolls exactly its own width while a
+     duplicate sits beside it, so the seam lands on an identical frame and the
+     loop has no visible jump. Paused on hover, and stopped dead for anyone who
+     asked for less motion. */
+  @keyframes rail {
+    to {
+      transform: translateX(-50%);
+    }
+  }
+
+  .rail {
+    animation: rail 64s linear infinite;
+  }
+
+  .rail-hold:hover .rail {
+    animation-play-state: paused;
+  }
+
   .balance {
     text-wrap: balance;
   }
@@ -329,9 +743,486 @@
     background-color: rgba(196, 85, 47, 0.055);
   }
 
+  /* ------------------------------------------------------------- studio ---
+   * The studio is a live transcript, so almost all of its motion is one thing:
+   * a row arriving. That entrance is deliberately quieter and quicker than the
+   * marketing page's `.rise` — at eight rows a second a 550ms fade with a lift
+   * turns a log into a lava lamp. 220ms and 4px reads as "printed" rather than
+   * "animated", which is the register a machine narrating its own work should
+   * be in.
+   */
+  @keyframes stream {
+    from {
+      opacity: 0;
+      transform: translateY(4px);
+    }
+  }
+
+  .stream {
+    animation: stream 220ms var(--ease-out) both;
+  }
+
+  /* ------------------------------------------------------------ choosing ---
+   * The two moments in a run where the machine stops and the person decides:
+   * which format, and who is in it. Both arrive as a shelf of cards, and a
+   * shelf is the one place in the studio where motion is worth more than the
+   * 220ms `.stream` a log row gets — a row is information arriving, a shelf is
+   * a question being asked, and the sequence is what makes it read as dealt
+   * rather than dumped.
+   *
+   * The delay is an inline `--i` per card instead of a `.stagger-N` class,
+   * because the number of cards is decided by the ranking at runtime and a
+   * fixed ladder of five would leave the sixth arriving with the first.
+   */
+  @keyframes card-in {
+    from {
+      opacity: 0;
+      transform: translateY(10px) scale(0.985);
+    }
+  }
+
+  .card-in {
+    animation: card-in 380ms var(--ease-out) both;
+    animation-delay: calc(var(--i, 0) * 55ms);
+  }
+
+  /* The decision, once it is made.
+   *
+   * Everything not chosen recedes rather than disappearing: the shelf is still
+   * the record of what was on offer, and a card that vanished would take the
+   * reason for the choice with it. Muted, not hidden — and never so far that
+   * the text drops below contrast, because these stay readable afterwards. */
+  .shelved {
+    /* A passed option remains a readable record of the choices considered. */
+    opacity: 0.78;
+    filter: saturate(0.75);
+    transition:
+      opacity 260ms var(--ease-out),
+      filter 260ms var(--ease-out);
+  }
+
+  /* A disclosure that opens to whatever height its content needs.
+   *
+   * `grid-template-rows: 0fr → 1fr` because the alternative is measuring the
+   * content in JavaScript and animating a pixel height, which is a layout
+   * animation with a resize observer attached to it. This is one property, it
+   * is interpolatable, and it cannot disagree with the content. */
+  .unfurl {
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows 320ms var(--ease-glide);
+  }
+
+  .unfurl > * {
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .unfurl[data-open="true"] {
+    grid-template-rows: 1fr;
+  }
+
+  /* ------------------------------------------------------------ waiting ---
+   * Two different waits, and they must not look the same.
+   *
+   * A skeleton is a promise about shape: we know a card of roughly this size is
+   * coming. The sweep says the wait is live rather than stalled. It runs over a
+   * sunk surface rather than under a white highlight, because on paper a white
+   * sweep is invisible and a grey one reads as dirt.
+   */
+  @keyframes sweep {
+    from {
+      transform: translateX(-100%);
+    }
+    to {
+      transform: translateX(100%);
+    }
+  }
+
+  .skeleton {
+    position: relative;
+    overflow: hidden;
+    background-color: var(--paper-sunk);
+  }
+
+  .skeleton::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image: linear-gradient(
+      90deg,
+      transparent,
+      rgba(255, 255, 255, 0.75),
+      transparent
+    );
+    animation: sweep 1.4s var(--ease-in-out) infinite;
+  }
+
+  /* The same sweep across text that is already there but not yet final — a
+     label that is still resolving, rather than a box that is still empty. */
+  @keyframes pulse-soft {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.55;
+    }
+  }
+
+  .pending {
+    animation: pulse-soft 1.6s var(--ease-in-out) infinite;
+  }
+
+  /* The completed tick draws itself rather than appearing. It is the one moment
+     of reward in a stage that took forty seconds, and a mark that draws is the
+     cheapest possible way to say "this just happened" versus "this was already
+     true when you looked". */
+  @keyframes draw {
+    from {
+      stroke-dashoffset: 16;
+    }
+    to {
+      stroke-dashoffset: 0;
+    }
+  }
+
+  .draw {
+    stroke-dasharray: 16;
+    animation: draw 320ms cubic-bezier(0.33, 1, 0.68, 1) both;
+  }
+
+  /* A node currently executing. The ring pulses outward and fades — the same
+     gesture as a sonar return, which is what a node waiting on a network call
+     actually is. Scoped to transform and opacity so it stays on the compositor
+     while the thread above it is still reflowing. */
+  @keyframes ping {
+    from {
+      transform: scale(1);
+      opacity: 0.55;
+    }
+    to {
+      transform: scale(2.6);
+      opacity: 0;
+    }
+  }
+
+  .ping::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background-color: currentColor;
+    animation: ping 1.6s cubic-bezier(0, 0, 0.2, 1) infinite;
+  }
+
+  /* -------------------------------------------------------------- credits ---
+   * What was just spent, rising off the meter.
+   *
+   * The one place in the app where a number is allowed to move on its own, and
+   * it earns it: the agent spends the person's money without asking between
+   * tools, so the charge has to be visible at the moment it happens rather than
+   * discoverable afterwards on a page nobody opens.
+   *
+   * Short and slightly slow at the end — it travels most of its distance in the
+   * first third and then hangs, which is what makes a figure legible for long
+   * enough to read while still being gone before the next tool starts.
+   */
+  @keyframes receipt {
+    from {
+      opacity: 0;
+      transform: translateY(4px);
+    }
+    30% {
+      opacity: 1;
+      transform: translateY(-6px);
+    }
+    to {
+      opacity: 0;
+      transform: translateY(-12px);
+    }
+  }
+
+  .receipt {
+    animation: receipt 900ms var(--ease-out) both;
+  }
+
+  /* The graph's edges draw themselves in as the level they feed becomes
+     reachable, so the picture assembles in dependency order — which is the one
+     fact about a DAG that a static diagram cannot show.
+     *
+   * Paired with `pathLength="1"` on the path, so the dash is expressed as a
+   * fraction of the whole rather than in pixels. A fixed pixel dash draws a
+   * genuinely dashed line the moment an edge is longer than it — which is what
+   * happens the first time a graph is deep enough to need a routed lane. */
+  @keyframes wire {
+    from {
+      stroke-dashoffset: 1;
+    }
+    to {
+      stroke-dashoffset: 0;
+    }
+  }
+
+  .wire {
+    stroke-dasharray: 1;
+    animation: wire 700ms cubic-bezier(0.33, 1, 0.68, 1) both;
+  }
+
+  /* An edge whose source has finished and whose target is running right now.
+   *
+   * The draw-in above says "this connection exists"; this says "something is
+   * going down it at this moment", which is a different fact and the one that
+   * tells you where in the graph the run currently is. Short dashes travelling
+   * source-to-target — again as fractions of the path, so a routed lane four
+   * times the length of a straight edge still shows the same pattern.
+   *
+   * `stroke-dashoffset` decreasing moves the dashes the way the path was
+   * drawn, which is always dependency → dependent. */
+  @keyframes flow {
+    to {
+      stroke-dashoffset: -0.4;
+    }
+  }
+
+  .wire-flow {
+    stroke-dasharray: 0.07 0.33;
+    stroke-linecap: round;
+    animation: flow 1s linear infinite;
+  }
+
+  /* --------------------------------------------------------------- nodes ---
+   * Four states, four distinguishable gestures. The rule everywhere here: a
+   * node that is running must be the only thing moving, so that glancing at
+   * the diagram answers "where is it now" without reading a single label.
+   */
+
+  /* Arrival, dealt out in dependency order — see the per-level delay in
+     GraphView. A DAG that assembles top-down teaches its own reading order. */
+  @keyframes node-in {
+    from {
+      opacity: 0;
+      transform: translateY(6px) scale(0.97);
+    }
+  }
+
+  .node-in {
+    animation: node-in 300ms var(--ease-out) both;
+  }
+
+  /* Executing. A slow ember halo rather than a fast pulse: these nodes wait on
+     a model for forty seconds, and anything quick starts to read as urgency. */
+  @keyframes node-live {
+    0%,
+    100% {
+      box-shadow: 0 0 0 0 rgba(196, 85, 47, 0);
+    }
+    50% {
+      box-shadow:
+        0 0 0 3px rgba(196, 85, 47, 0.1),
+        0 8px 20px -12px rgba(196, 85, 47, 0.7);
+    }
+  }
+
+  .node-live {
+    animation: node-live 2s var(--ease-in-out) infinite;
+  }
+
+  /* The indeterminate sliver along a running node's bottom edge. It travels
+     rather than fills, because we cannot measure a diffusion call's progress
+     and a bar that filled would be a lie about how far along it is. */
+  @keyframes crawl {
+    from {
+      transform: translateX(-110%);
+    }
+    to {
+      transform: translateX(320%);
+    }
+  }
+
+  .crawl {
+    overflow: hidden;
+  }
+
+  .crawl::after {
+    content: "";
+    position: absolute;
+    inset-block: 0;
+    left: 0;
+    width: 30%;
+    border-radius: inherit;
+    background-color: var(--ember);
+    animation: crawl 1.3s var(--ease-in-out) infinite;
+  }
+
+  /* Finished. One small overshoot — the node has been sitting still for the
+     better part of a minute, so the difference between "done" and "was already
+     done when you looked" is worth the 340ms. */
+  @keyframes node-settle {
+    0% {
+      transform: scale(1);
+    }
+    45% {
+      transform: scale(1.04);
+    }
+    100% {
+      transform: scale(1);
+    }
+  }
+
+  .node-settle {
+    animation: node-settle 340ms var(--ease-out) both;
+  }
+
+  /* Failed. The shake is the only motion in this file that reads as a refusal,
+     which is exactly what it is for. */
+  @keyframes node-shake {
+    0%,
+    100% {
+      transform: translateX(0);
+    }
+    20% {
+      transform: translateX(-3px);
+    }
+    45% {
+      transform: translateX(3px);
+    }
+    70% {
+      transform: translateX(-2px);
+    }
+    88% {
+      transform: translateX(1px);
+    }
+  }
+
+  .node-shake {
+    animation: node-shake 400ms var(--ease-in-out) both;
+  }
+
+  /* A fan-out counter going from ×2 to ×3. Tiny, and it is the only way to see
+     that a `foreach` node is still producing rather than stalled. */
+  @keyframes tick {
+    from {
+      transform: translateY(-3px);
+      opacity: 0;
+    }
+  }
+
+  .tick {
+    animation: tick 240ms var(--ease-out) both;
+  }
+
+  /* ------------------------------------------------------------- filing ---
+   * A chat that has just been dropped into another project.
+   *
+   * The move itself is invisible: the row leaves one list and reappears in
+   * another, often a screen away from where the cursor let go, and there is no
+   * reason for the eye to follow it. So the row arrives — a short drop into
+   * place under a warm tint that burns off — and that arrival is the receipt.
+   *
+   * No fill mode on purpose. The tint has to release at the end so the row's
+   * own background (which differs for the chat you are currently in) takes
+   * over, rather than being pinned transparent for the rest of the session.
+   */
+  @keyframes landed {
+    from {
+      opacity: 0;
+      transform: translateY(-6px);
+      background-color: rgba(196, 85, 47, 0.16);
+    }
+    55% {
+      opacity: 1;
+      transform: none;
+      background-color: rgba(196, 85, 47, 0.16);
+    }
+    to {
+      background-color: rgba(196, 85, 47, 0);
+    }
+  }
+
+  .landed {
+    animation: landed 700ms var(--ease-out);
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .surface {
       transition-duration: 1ms;
+    }
+    /* The figure still appears and still says what was spent; it just does not
+       travel. Removing it entirely would take away the only notice a charge
+       ever gets. */
+    .receipt {
+      animation: receipt-still 900ms linear both;
+      transform: none;
+    }
+    @keyframes receipt-still {
+      from,
+      70% {
+        opacity: 1;
+      }
+      to {
+        opacity: 0;
+      }
+    }
+    .stream,
+    .card-in,
+    .draw,
+    .wire,
+    .node-in,
+    .node-settle,
+    .node-shake,
+    .tick {
+      animation: none;
+      opacity: 1;
+      stroke-dashoffset: 0;
+      transform: none;
+    }
+    /* The live states keep their colour and lose their motion. A running node
+       is still the ember one; it simply stops breathing. */
+    .node-live,
+    .wire-flow {
+      animation: none;
+    }
+    .wire-flow {
+      stroke-dasharray: none;
+    }
+    .ping::after,
+    .skeleton::after,
+    .crawl::after {
+      animation: none;
+      opacity: 0;
+    }
+    .pending {
+      animation: none;
+      opacity: 0.7;
+    }
+    /* The disclosure still opens — it just arrives open rather than growing
+       into place. A shelf that could not be browsed at all would be a feature
+       withdrawn, which is not what this preference asks for. */
+    .unfurl,
+    .shelved {
+      transition-duration: 1ms;
+    }
+    /* The tint stays and the travel goes. Colour settling is not the kind of
+       motion this preference is about, and it is the only confirmation a
+       sighted person gets that the chat landed where they aimed it. */
+    @keyframes landed-still {
+      from,
+      55% {
+        background-color: rgba(196, 85, 47, 0.16);
+      }
+      to {
+        background-color: rgba(196, 85, 47, 0);
+      }
+    }
+    .landed {
+      animation: landed-still 700ms linear;
+    }
+    /* The dots stay, because they are the only signal that anything is
+       happening at all — they simply stop moving and hold a legible opacity. */
+    .think > span {
+      animation: none;
+      opacity: 0.6;
     }
   }
 
@@ -341,6 +1232,29 @@
       animation: none;
       opacity: 1;
       transform: none;
+    }
+    .rail,
+    .word-drift,
+    .hero-sweep,
+    .hero-caret {
+      animation: none;
+    }
+    .hero-composer-in {
+      animation: none;
+    }
+    .hero-stage-sheen,
+    .hero-composer-primary,
+    .hero-composer-actions,
+    .hero-card-static,
+    .hero-card-lead {
+      animation: none;
+      opacity: 1;
+    }
+    /* The resting transform is the inline style, so simply dropping the
+       animation leaves every frame exactly where it belongs. */
+    .deal {
+      animation: none;
+      opacity: 1;
     }
     .shimmer::after {
       animation: none;
@@ -354,25 +1268,30 @@
 }
 
 /* ------------------------------------------------------------------ clerk ---
- * Two things the `appearance.variables` API cannot reach, so they are patched
- * here against Clerk's own `cl-` classes (a documented, stable styling hook).
+ * One thing the `appearance` API cannot reach, patched against Clerk's own
+ * `cl-` classes.
  *
- * 1. Clerk's inline icons carry no `fill`, so SVG's initial value applies and
- *    they paint black — on a dark panel that reads as a missing icon rather
- *    than a dark one. `currentColor` hands them back to whatever text colour
- *    the surrounding element already resolved, which the variables above have
- *    set correctly. Scoped to `cl-` so it cannot touch our own SVGs.
+ * Clerk's inline icons ship a `fill` presentation attribute, and a presentation
+ * attribute loses to any stylesheet rule — including a zero-specificity one —
+ * so this hands every one of them back to whatever text colour the surrounding
+ * element already resolved. That colour is correct on both grounds, because the
+ * `appearance.variables` in the root layout and in lib/clerk-appearance.ts set
+ * it. Scoped to `cl-` so it cannot reach our own SVGs, and written with
+ * `:where()` so it adds no specificity and anything more specific still wins.
  *
- * 2. Provider logos are remote images from img.clerk.com, so no colour
- *    variable applies to them at all. Apple's mark is supplied as solid black
- *    and is invisible here. Only Apple is inverted: Google's is multicolour
- *    and inverting it would produce a wrong-coloured Google logo, which is a
- *    brand problem rather than a contrast one.
+ * Everything else these screens change about Clerk goes through
+ * `appearance.elements` in lib/clerk-appearance.ts, which is the supported API.
+ * Clerk logs a console warning for selectors written against `.cl-*` — that is
+ * its internal DOM and it can change under any component update — so this file
+ * should not grow more of them.
+ *
+ * REMOVED, and worth not putting back: an `img.cl-providerIcon[src*="apple"]`
+ * rule that inverted Apple's black wordmark for the dark panel. Clerk no longer
+ * renders provider logos as remote images. They are now a `<span>` with a CSS
+ * `mask-image` tinted by `background-color`, which Clerk derives from the
+ * appearance variables — so both grounds already come out right on their own,
+ * and that selector had quietly stopped matching anything at all.
  */
 :where([class*="cl-"]) svg {
   fill: currentColor;
-}
-
-img.cl-providerIcon[src*="apple"] {
-  filter: invert(1);
 }

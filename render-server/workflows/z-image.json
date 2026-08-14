@@ -1,0 +1,77 @@
+{
+  "_comment": [
+    "Z-Image Turbo 6B (Q4_K_M GGUF), text-to-image, ComfyUI API format.",
+    "",
+    "This makes the master frame — the still every beat frame is later edited",
+    "from, and therefore the thing that decides whether the actor stays the same",
+    "person across the cut. It is the one image in the pipeline worth caring about",
+    "at draft stage, which is why it gets a real model rather than a placeholder.",
+    "",
+    "Turbo is distilled: 8 steps at cfg 1.0. Distilled weights carry the guidance",
+    "internally, so a base model's cfg 7-8 produces burnt, oversaturated frames.",
+    "",
+    "The text encoder type below is deliberately not 'z_image' — there is no such",
+    "CLIPType. ComfyUI routes Qwen3-4B to the Z-Image encoder from the state dict",
+    "itself (comfy/sd.py, TEModel.QWEN3_4B), and the `type` field only matters for",
+    "steering it towards Flux instead. 'lumina2' is the closest honest label, since",
+    "ZImage subclasses Lumina2.",
+    "",
+    "Generated at the draft video size so LTX consumes it without resampling."
+  ],
+
+  "unet": {
+    "class_type": "UnetLoaderGGUF",
+    "inputs": { "unet_name": "{{unet}}" }
+  },
+
+  "clip": {
+    "class_type": "CLIPLoader",
+    "inputs": { "clip_name": "{{text_encoder}}", "type": "lumina2" }
+  },
+
+  "vae": {
+    "class_type": "VAELoader",
+    "inputs": { "vae_name": "{{vae}}" }
+  },
+
+  "positive": {
+    "class_type": "CLIPTextEncode",
+    "inputs": { "clip": ["clip", 0], "text": "{{prompt}}" }
+  },
+
+  "negative": {
+    "class_type": "CLIPTextEncode",
+    "inputs": { "clip": ["clip", 0], "text": "{{negative_prompt}}" }
+  },
+
+  "latent": {
+    "class_type": "EmptySD3LatentImage",
+    "inputs": { "width": "{{width}}", "height": "{{height}}", "batch_size": 1 }
+  },
+
+  "sample": {
+    "class_type": "KSampler",
+    "inputs": {
+      "model": ["unet", 0],
+      "seed": "{{seed}}",
+      "steps": "{{steps}}",
+      "cfg": "{{cfg}}",
+      "sampler_name": "euler",
+      "scheduler": "simple",
+      "positive": ["positive", 0],
+      "negative": ["negative", 0],
+      "latent_image": ["latent", 0],
+      "denoise": 1.0
+    }
+  },
+
+  "decode": {
+    "class_type": "VAEDecode",
+    "inputs": { "samples": ["sample", 0], "vae": ["vae", 0] }
+  },
+
+  "save": {
+    "class_type": "SaveImage",
+    "inputs": { "images": ["decode", 0], "filename_prefix": "carouly/{{stem}}" }
+  }
+}

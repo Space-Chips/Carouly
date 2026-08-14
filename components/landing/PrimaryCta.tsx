@@ -39,8 +39,8 @@ export default function PrimaryCta({
       </Show>
 
       <Show when="signed-in">
-        <Link href="/dashboard" className={`${base} ${scale} ${className}`}>
-          Back to autopilot
+        <Link href="/studio" className={`${base} ${scale} ${className}`}>
+          Open the studio
           <ArrowRight
             weight="bold"
             aria-hidden

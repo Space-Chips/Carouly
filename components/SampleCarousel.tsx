@@ -35,13 +35,13 @@ export default function SampleCarousel({ width = 232 }: { width?: number }) {
   return (
     <div>
       <div className="flex items-center gap-3">
-        <span className="font-mono text-xs uppercase tracking-[0.2em] text-dim">
+        <span className="font-mono text-xs uppercase tracking-[0.2em] text-mute">
           Look
         </span>
         <div
           role="group"
           aria-label="Carousel look"
-          className="flex gap-1 rounded-full border border-hair p-1"
+          className="flex gap-1 rounded-full border border-rule p-1"
         >
           {options.map((option) => (
             <button
@@ -49,10 +49,10 @@ export default function SampleCarousel({ width = 232 }: { width?: number }) {
               type="button"
               onClick={() => setPreset(option.id)}
               aria-pressed={option.id === preset}
-              className={`rounded-full px-3 py-1 text-sm outline-none transition-all duration-700 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-ember ${
+              className={`rounded-full px-3 py-1 text-sm outline-none transition-all duration-700 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-graphite ${
                 option.id === preset
-                  ? "bg-ember/15 text-ember-lit"
-                  : "text-dim hover:text-bone"
+                  ? "bg-graphite font-semibold text-white"
+                  : "text-mute hover:text-graphite"
               }`}
             >
               {option.label}
@@ -77,7 +77,7 @@ export default function SampleCarousel({ width = 232 }: { width?: number }) {
             />
             <p
               className={`mt-3 font-mono text-xs uppercase tracking-[0.2em] ${
-                slide.kind === "cta" ? "text-ember-lit" : "text-dim"
+                slide.kind === "cta" ? "text-ember" : "text-mute"
               }`}
             >
               {String(index + 1).padStart(2, "0")} · {kindLabel[slide.kind]}

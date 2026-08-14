@@ -4,7 +4,8 @@ import {
   hookImagePrompt,
   writeCarousel,
 } from "@/lib/generator";
-import { entitlementForUser } from "@/lib/billing";
+import { getBalance, refund, spend } from "@/lib/credits/ledger";
+import { CAROUSEL_COST } from "@/lib/credits/prices";
 import { Candidate, expandSeeds } from "@/lib/keyword-sources";
 import { fromCandidate, KeywordRow } from "@/lib/keywords";
 import { generateImage } from "@/lib/openrouter";
@@ -318,6 +319,27 @@ export const runBrandDaily = async (
 
   for (let i = 0; i < requested; i++) {
     try {
+      /**
+       * Paid for one at a time, as each is written.
+       *
+       * Charging for the whole batch up front would mean a run that stopped
+       * halfway had been paid for in full, and a run that could not afford its
+       * fifth carousel would produce none at all. This way a balance that runs
+       * dry mid-batch keeps everything already made and stops cleanly, which is
+       * what somebody would expect of a meter.
+       */
+      const paid = await spend({
+        userId: brand.user_id,
+        amount: CAROUSEL_COST,
+        operation: "carousel",
+        detail: brand.name,
+      });
+
+      if (!paid.ok) {
+        result.skipped = "out of credits";
+        break;
+      }
+
       const carouselId = await createCarousel(brand);
       result.created.push(carouselId);
 
@@ -334,6 +356,14 @@ export const runBrandDaily = async (
       }
     } catch (err) {
       result.errors.push(err instanceof Error ? err.message : String(err));
+
+      // Nothing was produced, so nothing is owed. Not keyed: this is one
+      // attempt inside one loop, and a second attempt is a second charge.
+      await refund({
+        userId: brand.user_id,
+        amount: CAROUSEL_COST,
+        detail: `${brand.name} — generation failed`,
+      }).catch(() => {});
     }
   }
 
@@ -373,25 +403,28 @@ export const runDueBrands = async (
       continue;
     }
 
-    // No session here, so this reads the webhook-maintained mirror rather than
-    // a plan claim. A brand left on autopilot after a subscription lapsed is
-    // skipped rather than silently generating: it is recorded as the skip
-    // reason so the dashboard can say why nothing ran.
-    const { tier } = await entitlementForUser(brand.user_id);
-
-    if (!tier.limits.autopilot) {
+    /**
+     * Checked here as well as inside the run, so a brand with nothing on its
+     * balance is skipped before any work starts.
+     *
+     * The reason is recorded rather than the brand being switched off. Autopilot
+     * is a setting somebody chose; an empty balance is a Tuesday. Turning their
+     * schedule off because of it would mean they had to notice and re-enable it
+     * after topping up, and nobody ever does.
+     */
+    if ((await getBalance(brand.user_id)) < CAROUSEL_COST) {
       results.push({
         brandId: brand.id,
         created: [],
         published: 0,
-        skipped: "no active subscription",
+        skipped: "out of credits",
         errors: [],
       });
       continue;
     }
 
     try {
-      results.push(await runBrandDaily(brand, { limit: tier.limits.postsPerDay }));
+      results.push(await runBrandDaily(brand));
     } catch (err) {
       results.push({
         brandId: brand.id,

@@ -1,0 +1,134 @@
+{
+  "id": "three_voices",
+  "name": "Three Voices",
+  "description": "Three different customers, one line each, cut together. The lead is a full cast identity you can reuse; the other two are generated per run, because the point of the format is that they are not the same person. Social proof that reads as three people rather than one testimonial stretched thin.",
+  "aspect": "9:16",
+  "duration_range": [15, 21],
+  "match": {
+    "creative_format": ["testimonial-montage", "social-proof", "ugc-testimonial", "montage"],
+    "preferred_types": ["Testimonial", "UGC", "Social proof"],
+    "funnel_stage": ["consideration", "conversion"],
+    "tone": ["warm", "candid", "plain-spoken", "confident"],
+    "settings": ["home", "office", "outdoors", "small-shop", "kitchen"]
+  },
+  "inputs": {
+    "claim": { "description": "The one thing all three are corroborating, in the brand's own words.", "required": true },
+    "angles": { "description": "3 different reasons people value it, as a list — one per voice. They must not overlap.", "required": true },
+    "cta": { "description": "The last line, spoken by the third voice.", "required": true },
+    "presenter": { "description": "Casting note for the lead voice, e.g. 'woman, 50s, practice manager'.", "required": false }
+  },
+  "output": "{{final}}",
+
+  "nodes": [
+    {
+      "id": "style",
+      "type": "const",
+      "value": {
+        "frame": "Vertical 9:16 photorealistic phone photograph of one person filming themselves at arm's length. Available light only, one direction, uneven shadows. Their own real room behind them with specific everyday clutter. Ordinary clothes with creases. Skin has visible pores and texture, no retouching, no beauty filter. Slightly off-centre framing, mild lens distortion, subtle grain. Both eyes open, looking straight into the lens, mid-sentence.",
+        "motion": "Keep the exact same person, hair, wardrobe and room as the reference image. Handheld phone feel, slight unsteady drift. The person speaks one sentence directly into the front-facing camera, blinking and breathing naturally. Continuous phone footage, no cuts.",
+        "negative": "eyes closed, mid-blink, looking away, head turned away, profile view, studio lighting, three-point lighting, cinematic colour grade, airbrushed skin, plastic skin, beauty filter, CGI, 3D render, stock photo, model headshot, polished commercial look, watermark, text overlay, subtitles, extra fingers, warped hands"
+      }
+    },
+    {
+      "id": "casting",
+      "type": "llm.json",
+      "system": "You cast testimonial montages. The three people must be visibly different from each other — different ages, builds, rooms, accents in the writing — because a montage of near-identical people is worse than one testimonial. Nobody uses marketing words. Each line is one breath.",
+      "prompt": "Brand: {{brand.brand_name}} — {{brand.brand_summary}}\nVoice: {{brand.voice_tone}}\nAudience: {{brand.target_personas}}\n\nThe shared claim: {{inputs.claim}}\nThe three angles: {{inputs.angles}}\nClosing line: {{inputs.cta}}\nCasting note for the lead: {{inputs.presenter}}\n\nCast THREE different customers, one per angle, and give each one line. The third one's line ends on the call to action.\n\n`lead` is the first voice. `others` is a list of exactly 2 more, each written the same way. For each of the three:\n- `actor`: one paragraph pinning identity down hard enough to repeat — apparent age, build, hair, face details, exact clothing including colour and fabric, and the specific room with named objects in it.\n- `master_frame_prompt`: a still-image prompt for them filming themselves in that room, looking into the lens. Describe the person, clothing, room and light only — no camera brand names, no quality adjectives, no text.\n- `motion_prompt`: what happens in the 5 seconds after that frame, with the spoken line in double quotes.\n- `line`: the spoken words, at most 13 words.\n- `caption`: at most 5 words, for viewers watching muted.\n\nMake the three read as strangers to each other: different rooms, different light, different registers.",
+      "schema": {
+        "lead": {
+          "actor": "identity paragraph",
+          "master_frame_prompt": "still-image prompt",
+          "motion_prompt": "action and delivery, with the spoken line in quotes",
+          "line": "<=13 words",
+          "caption": "<=5 words"
+        },
+        "others": [
+          {
+            "actor": "identity paragraph",
+            "master_frame_prompt": "still-image prompt",
+            "motion_prompt": "action and delivery, with the spoken line in quotes",
+            "line": "<=13 words",
+            "caption": "<=5 words"
+          }
+        ]
+      },
+      "temperature": 0.9
+    },
+    {
+      "id": "master",
+      "role": "identity",
+      "type": "fal.image",
+      "model": "image.nano_banana",
+      "prompt": "{{casting.lead.master_frame_prompt}}\n\n{{style.frame}}",
+      "negative_prompt": "{{style.negative}}",
+      "aspect_ratio": "9:16"
+    },
+    {
+      "id": "other_frames",
+      "type": "fal.image",
+      "foreach": "{{casting.others}}",
+      "as": "person",
+      "model": "image.nano_banana",
+      "prompt": "{{person.master_frame_prompt}}\n\n{{style.frame}}",
+      "negative_prompt": "{{style.negative}}",
+      "aspect_ratio": "9:16"
+    },
+    {
+      "id": "lead_clip",
+      "type": "fal.video",
+      "model": "video.veo3_fast_i2v",
+      "image_url": "{{master.url}}",
+      "prompt": "{{casting.lead.motion_prompt}}\n\n{{style.motion}}",
+      "negative_prompt": "{{style.negative}}",
+      "aspect_ratio": "9:16",
+      "duration": 5
+    },
+    {
+      "id": "other_beats",
+      "type": "zip",
+      "person": "{{casting.others}}",
+      "frame": "{{other_frames}}"
+    },
+    {
+      "id": "other_clips",
+      "type": "fal.video",
+      "foreach": "{{other_beats}}",
+      "as": "b",
+      "model": "video.veo3_fast_i2v",
+      "image_url": "{{b.frame.url}}",
+      "prompt": "{{b.person.motion_prompt}}\n\n{{style.motion}}",
+      "negative_prompt": "{{style.negative}}",
+      "aspect_ratio": "9:16",
+      "duration": 5
+    },
+    {
+      "id": "voices",
+      "type": "list",
+      "items": ["{{lead_clip}}", "{{other_clips}}"]
+    },
+    {
+      "id": "other_captions",
+      "type": "pick",
+      "items": "{{casting.others}}",
+      "field": "caption"
+    },
+    {
+      "id": "captions",
+      "type": "list",
+      "items": ["{{casting.lead.caption}}", "{{other_captions}}"]
+    },
+    {
+      "id": "cut",
+      "type": "video.concat",
+      "clips": "{{voices}}",
+      "clip_seconds": 5
+    },
+    {
+      "id": "final",
+      "type": "video.captions",
+      "video": "{{cut}}",
+      "lines": "{{captions}}",
+      "clip_seconds": [5, 5, 5]
+    }
+  ]
+}

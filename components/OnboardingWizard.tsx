@@ -28,14 +28,34 @@ type Values = Record<string, string>;
 
 const STEPS = [
   { title: "Your brand", hint: "What you are and what you sell." },
-  { title: "Your subject", hint: "What your carousels will teach." },
+  { title: "Your subject", hint: "What your posts will teach." },
   { title: "Where it points", hint: "How the last slide converts." },
 ];
 
-export default function OnboardingWizard() {
+/**
+ * What can honestly be derived from a hostname alone.
+ *
+ * `northline.coffee` gives a brand name and a website, and nothing else. It is
+ * deliberately not dressed up as having read the site: the fields are filled,
+ * labelled as a starting point, and every one of them is editable, so nobody is
+ * shown a guess wearing the clothes of a fact.
+ */
+const fromHost = (host: string): Values => {
+  const [label] = host.split(".");
+
+  return {
+    name: label.charAt(0).toUpperCase() + label.slice(1),
+    website_url: `https://${host}`,
+  };
+};
+
+export default function OnboardingWizard({ site }: { site?: string | null }) {
   const router = useRouter();
   const [step, setStep] = useState(0);
-  const [values, setValues] = useState<Values>({ bio_link_label: "link in bio" });
+  const [values, setValues] = useState<Values>(() => ({
+    bio_link_label: "link in bio",
+    ...(site ? fromHost(site) : {}),
+  }));
   const [pending, startTransition] = useTransition();
   const [stage, setStage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -83,11 +103,14 @@ export default function OnboardingWizard() {
           console.error(keywordError);
         }
 
-        // Not the dashboard. This is the one moment the product has just done
-        // real work on their real domain and they have not seen it yet, so the
-        // next screen reads that back before it asks for anything. `from`
-        // tells the paywall to lead with the value step rather than the price.
-        router.push("/upgrade?from=onboarding");
+        // The dashboard, not the buy page.
+        //
+        // This used to hand somebody straight to a two-step paywall, because a
+        // subscription had to be sold before the product would do anything.
+        // Under credits it already has: a new account carries its welcome
+        // credits, and the honest next screen is the one where they can spend
+        // them on the domain the setup just researched.
+        router.push("/dashboard");
       } catch (err) {
         setError(err instanceof Error ? err.message : "Could not save brand.");
         setStage(null);
@@ -116,6 +139,20 @@ export default function OnboardingWizard() {
 
   return (
     <div className="max-w-xl">
+      {/* The address they pasted, held in view for the whole wizard. Without it
+          the first screen looks like the form they were trying to avoid. */}
+      {site ? (
+        <div className="mb-8 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2">
+          <span className="font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground">
+            Starting from
+          </span>
+          <span className="text-sm font-semibold">{site}</span>
+          <span className="text-xs text-muted-foreground">
+            Change anything below.
+          </span>
+        </div>
+      ) : null}
+
       {/* Progress: three segments, filled left to right. */}
       <div className="flex gap-2" aria-label={`Step ${step + 1} of 3`}>
         {STEPS.map((item, index) => (
@@ -190,7 +227,7 @@ export default function OnboardingWizard() {
                   autoFocus
                 />
                 <p className="text-xs text-muted-foreground">
-                  The subject your tips live in. Carousels teach this — never
+                  The subject your tips live in. Posts teach this — never
                   the product itself.
                 </p>
               </div>

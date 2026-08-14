@@ -3,13 +3,52 @@ import { Brand, Carousel, Platform, Slide, SocialConnection } from "@/types";
 
 import { ensureFreshCredentials } from "./oauth";
 import { getAdapter } from "./registry";
-import { PublishPayload } from "./types";
+import { PublishPayload, VideoPublishPayload } from "./types";
 
 export type PublishOutcome = {
   platform: Platform;
   status: "published" | "failed" | "skipped";
   permalink?: string;
   error?: string;
+};
+
+/** Publishes a rendered agent video to every enabled Instagram/TikTok account. */
+export const publishVideoForUser = async (
+  userId: string,
+  payload: VideoPublishPayload
+): Promise<PublishOutcome[]> => {
+  const supabase = createSupabaseAdminClient();
+  const { data: connections, error } = await supabase
+    .from("social_connections")
+    .select("*")
+    .eq("user_id", userId)
+    .eq("enabled", true)
+    .in("platform", ["instagram", "tiktok"]);
+
+  if (error) throw new Error(error.message);
+
+  const outcomes: PublishOutcome[] = [];
+  for (const connection of (connections ?? []) as SocialConnection[]) {
+    const adapter = getAdapter(connection.platform);
+    if (!adapter?.publishVideo) {
+      outcomes.push({ platform: connection.platform, status: "skipped", error: "Video posting is not configured." });
+      continue;
+    }
+
+    try {
+      const credentials = await ensureFreshCredentials(connection);
+      const result = await adapter.publishVideo(credentials, payload);
+      outcomes.push({ platform: connection.platform, status: "published", permalink: result.permalink });
+    } catch (err) {
+      outcomes.push({
+        platform: connection.platform,
+        status: "failed",
+        error: err instanceof Error ? err.message : String(err),
+      });
+    }
+  }
+
+  return outcomes;
 };
 
 /**
@@ -43,7 +82,7 @@ export const publishCarousel = async (
 
   if (imageUrls.length !== slides.length) {
     throw new Error(
-      "Carousel has unrendered slides. Render the assets before publishing."
+      "This post has unrendered slides. Render the assets before publishing."
     );
   }
 

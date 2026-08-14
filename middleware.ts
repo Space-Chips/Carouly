@@ -23,18 +23,39 @@ const isPublicRoute = createRouteMatcher([
  */
 const isConnectRoute = createRouteMatcher(["/api/connect(.*)"]);
 
-export default clerkMiddleware(async (auth, request) => {
-  if (isConnectRoute(request)) {
-    await auth.protect({
-      unauthenticatedUrl: new URL("/sign-in", request.url).toString(),
-    });
-    return;
-  }
+export default clerkMiddleware(
+  async (auth, request) => {
+    if (isConnectRoute(request)) {
+      await auth.protect({
+        unauthenticatedUrl: new URL("/sign-in", request.url).toString(),
+      });
+      return;
+    }
 
-  if (!isPublicRoute(request)) {
-    await auth.protect();
+    if (!isPublicRoute(request)) {
+      await auth.protect();
+    }
+  },
+  {
+    /**
+     * Where `auth.protect()` sends a signed-out visitor.
+     *
+     * These have to be here and not only on `ClerkProvider`. The provider is a
+     * React context and this runs in the edge, so with the option set in just
+     * one place the app said two different things: client-side buttons opened
+     * the in-app pages while every protected navigation — which is the path
+     * almost everybody actually takes, straight off the hero box — was redirected
+     * to Clerk's hosted Account Portal on `*.accounts.dev`. That is a different
+     * domain, in Clerk's purple, titled "My Application", and it is where the
+     * funnel had been leaking the entire time.
+     *
+     * `redirect_url` is appended by Clerk, so `?site=` survives the round trip
+     * and the auth screen can name the address it is about to read.
+     */
+    signInUrl: "/sign-in",
+    signUpUrl: "/sign-up",
   }
-});
+);
 
 // No `runtime` key: this stays on the edge, which is the default through
 // Next 15, and Next's own build bundles Clerk into the middleware correctly.
@@ -54,7 +75,11 @@ export default clerkMiddleware(async (auth, request) => {
 export const config = {
   matcher: [
     // Skip Next.js internals and all static files, unless found in search params
-    "/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)",
+    // mp4/webm/mov are in the list because the studio serves example renders and
+    // template previews as static files. Without them Clerk answers a request
+    // for a video with a bare 404, which arrives as a `<video>` that silently
+    // will not play — the hardest possible way to find out about a matcher.
+    "/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|mp4|webm|mov|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)",
     // Always run for API routes
     "/(api|trpc)(.*)",
   ],

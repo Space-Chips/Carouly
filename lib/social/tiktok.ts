@@ -132,7 +132,7 @@ export const tiktok: Adapter<TikTokCredentials> = {
   oauth: {
     env: { clientId: "TIKTOK_CLIENT_KEY", clientSecret: "TIKTOK_CLIENT_SECRET" },
     setupUrl: "https://developers.tiktok.com/apps",
-    summary: "Sign in to TikTok and allow posting photo carousels.",
+    summary: "Sign in to TikTok and allow posting photos and video.",
     requirement:
       "Any TikTok account works. On mobile the TikTok app takes over the login, so there is no password to type.",
     pkce: true,
@@ -288,6 +288,57 @@ export const tiktok: Adapter<TikTokCredentials> = {
         : undefined,
     };
   },
+
+  /** TikTok video publishing for the agentic flow. */
+  async publishVideo(credentials, payload) {
+    const { accessToken } = credentials;
+    const creator = await readTikTok(
+      await fetch(`${API}/post/publish/creator_info/query/`, {
+        method: "POST",
+        headers: authed(accessToken),
+        cache: "no-store",
+      }),
+      "TikTok creator info"
+    );
+
+    const info = creator?.data ?? {};
+    const canDirectPost = (credentials.scope ?? "").includes("video.publish");
+    if (!canDirectPost) {
+      throw new Error(
+        "TikTok has not granted video.publish for this account. Reconnect with direct posting enabled; video.upload only creates a draft and is not supported by the agent yet."
+      );
+    }
+
+    const init = await readTikTok(
+      await fetch(`${API}/post/publish/content/init/`, {
+        method: "POST",
+        headers: authed(accessToken),
+        body: JSON.stringify({
+          post_info: {
+            title: payload.caption.split("\n")[0].slice(0, 90),
+            description: composeCaption(payload, 4000),
+            disable_comment: Boolean(info.comment_disabled),
+            privacy_level: pickPrivacyLevel(info.privacy_level_options ?? []),
+            auto_add_music: false,
+          },
+          source_info: {
+            source: "PULL_FROM_URL",
+            video_url: payload.videoUrl,
+          },
+        }),
+        cache: "no-store",
+      }),
+      "TikTok video post init"
+    );
+
+    const publishId = init?.data?.publish_id;
+    if (!publishId) throw new Error("TikTok returned no video publish id.");
+
+    return {
+      externalId: publishId,
+      permalink: await resolvePermalink(accessToken, publishId, info.creator_username, "video"),
+    };
+  },
 };
 
 /**
@@ -298,7 +349,8 @@ export const tiktok: Adapter<TikTokCredentials> = {
 const resolvePermalink = async (
   accessToken: string,
   publishId: string,
-  username?: string
+  username?: string,
+  kind: "photo" | "video" = "photo"
 ): Promise<string | undefined> => {
   for (let attempt = 0; attempt < 5; attempt++) {
     await new Promise((resolve) => setTimeout(resolve, 3000));
@@ -318,8 +370,8 @@ const resolvePermalink = async (
 
       if (postId) {
         return username
-          ? `https://www.tiktok.com/@${username}/photo/${postId}`
-          : `https://www.tiktok.com/@/photo/${postId}`;
+          ? `https://www.tiktok.com/@${username}/${kind}/${postId}`
+          : `https://www.tiktok.com/@/${kind}/${postId}`;
       }
 
       if (status?.data?.status === "FAILED") return undefined;

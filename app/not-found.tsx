@@ -29,10 +29,10 @@ export default function NotFound() {
             Back to the start
           </Link>
           <Link
-            href="/dashboard"
+            href="/studio"
             className="rounded-full px-6 py-3 text-base text-dim outline-none transition-colors duration-700 ease-[cubic-bezier(0.32,0.72,0,1)] hover:text-bone focus-visible:ring-2 focus-visible:ring-ember"
           >
-            Open the dashboard
+            Open the studio
           </Link>
         </div>
       </div>

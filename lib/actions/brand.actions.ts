@@ -3,7 +3,6 @@
 import { auth } from "@clerk/nextjs/server";
 import { revalidatePath } from "next/cache";
 
-import { getEntitlement, UpgradeRequiredError } from "@/lib/billing";
 import { isPresetId } from "@/lib/presets";
 import { describeDbError } from "@/lib/setup";
 import { createSupabaseClient, uploadAsset } from "@/lib/supabase";
@@ -83,8 +82,6 @@ export const saveBrand = async (values: BrandFormValues): Promise<Brand> => {
     throw new Error("Brand name, product description and domain are required.");
   }
 
-  const { tier } = await getEntitlement();
-
   const payload = {
     user_id: userId,
     name: values.name.trim(),
@@ -104,12 +101,12 @@ export const saveBrand = async (values: BrandFormValues): Promise<Brand> => {
     posts_per_day: clamp(values.posts_per_day ?? 1, 1, 5),
     post_hour: clamp(values.post_hour ?? 9, 0, 23),
     timezone: values.timezone?.trim() || "UTC",
-    // Clamped, not rejected: this is the brand form and the schedule switches
-    // are not on it, so the only way an unentitled `true` arrives here is a
-    // hand-made request. `updateSchedule` is where a real user meets these,
-    // and that one explains itself instead of silently turning them off.
-    autopilot: (values.autopilot ?? false) && tier.limits.autopilot,
-    auto_publish: (values.auto_publish ?? false) && tier.limits.autoPublish,
+    // Neither switch is gated any more. Under credits there is nothing to gate
+    // them with: autopilot spends credits when it writes something, and it stops
+    // when there are none, which is a better guarantee than a tier flag ever was
+    // — a lapsed plan left the schedule on and silently produced nothing.
+    autopilot: values.autopilot ?? false,
+    auto_publish: values.auto_publish ?? false,
     updated_at: new Date().toISOString(),
   };
 
@@ -212,38 +209,17 @@ export const updateSchedule = async (values: {
 }) => {
   const userId = await requireUser();
   const supabase = createSupabaseClient();
-  const { tier } = await getEntitlement();
 
-  // The two switches are the product. Refusing them here rather than only
-  // hiding them in the UI is what makes the plan mean anything — the form
-  // posts a plain object and anyone can post their own.
-  if (values.autopilot && !tier.limits.autopilot) {
-    throw new UpgradeRequiredError(
-      "autopilot",
-      "Autopilot needs a plan. Start a free trial and it runs from tonight."
-    );
-  }
-
-  if (values.auto_publish && !tier.limits.autoPublish) {
-    throw new UpgradeRequiredError(
-      "auto_publish",
-      "Auto-publish needs a plan. Start a free trial to let it post without you."
-    );
-  }
-
-  // Volume is capped rather than refused: someone downgrading from Studio has
-  // 5 saved, and rejecting their next unrelated settings save over a number
-  // they did not touch would be baffling.
+  /**
+   * Nothing here is refused any more.
+   *
+   * Every switch on this form used to be a plan gate, and each one had to be
+   * enforced twice — hidden in the UI and rejected here, because the form posts
+   * a plain object and anybody can post their own. A meter needs neither: the
+   * schedule is free to set, and what it does costs credits when it runs. The
+   * cap on volume is the column's own constraint rather than a tier's.
+   */
   const perDay = clamp(values.posts_per_day, 1, 5);
-
-  if (perDay > tier.limits.postsPerDay && tier.limits.autopilot) {
-    throw new UpgradeRequiredError(
-      "posts_per_day",
-      `${tier.name} writes ${tier.limits.postsPerDay} carousel${
-        tier.limits.postsPerDay === 1 ? "" : "s"
-      } a day. Studio goes up to 5.`
-    );
-  }
 
   const { error } = await supabase
     .from("brands")

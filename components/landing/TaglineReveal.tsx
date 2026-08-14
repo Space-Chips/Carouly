@@ -19,11 +19,21 @@ import { useEffect, useMemo, useRef, useState } from "react";
  */
 export default function TaglineReveal({
   text,
+  tone = "ink",
   className = "",
 }: {
   text: string;
+  /** Which ground it sits on. The marketing page is on paper, the app is not. */
+  tone?: "ink" | "paper";
   className?: string;
 }) {
+  // Roughly a third of the base text colour when unlit, in both directions, so
+  // the warm-up reads the same whichever surface the section lands on.
+  const [dark, light] =
+    tone === "paper"
+      ? ["text-graphite", "text-graphite/30"]
+      : ["text-bone", "text-bone/30"];
+
   // Memoised so it is a stable effect dependency rather than a new array on
   // every render.
   const words = useMemo(() => text.split(" "), [text]);
@@ -113,7 +123,7 @@ export default function TaglineReveal({
             }}
             style={{ transitionDelay: `${delays[index]}ms` }}
             className={`inline-block transition-colors duration-700 ease-[cubic-bezier(0.32,0.72,0,1)] motion-reduce:transition-none ${
-              lit[index] ? "text-bone" : "text-bone/30"
+              lit[index] ? dark : light
             }`}
           >
             {word}

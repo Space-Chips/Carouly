@@ -7,10 +7,10 @@ import ConnectionsPanel, {
 } from "@/components/ConnectionsPanel";
 import PresetPicker from "@/components/PresetPicker";
 import ScheduleForm from "@/components/ScheduleForm";
-import PlanPanel from "@/components/upgrade/PlanPanel";
+import CreditPanel from "@/components/credits/CreditPanel";
 import { getBrand } from "@/lib/actions/brand.actions";
 import { getConnections } from "@/lib/actions/connection.actions";
-import { getEntitlement, getQuota } from "@/lib/billing";
+import { openAccount } from "@/lib/credits/ledger";
 import { getPreset, listPresets } from "@/lib/presets";
 import { isOAuthReady, listAdapters } from "@/lib/social";
 
@@ -28,13 +28,11 @@ export default async function SettingsPage({
   const connections = await getConnections();
   const preset = getPreset(brand.preset);
   const { connected, connect_error: connectError } = await searchParams;
-  const { tier } = await getEntitlement();
-  const quota = tier.id === "free" ? await getQuota(userId!) : null;
+  const account = await openAccount(userId!);
 
-  // Instagram is the only customer-facing connection while the other
-  // publishing integrations are being rebuilt.
+  // These are the accounts used by the agentic video publishing flow.
   const adapters: AdapterInfo[] = listAdapters()
-    .filter((adapter) => adapter.platform === "instagram")
+    .filter((adapter) => ["instagram", "tiktok"].includes(adapter.platform))
     .map((adapter) => {
       const ready = isOAuthReady(adapter.platform);
 
@@ -42,8 +40,8 @@ export default async function SettingsPage({
         platform: adapter.platform,
         label: adapter.label,
         docsUrl: adapter.docsUrl,
-        // An account ID or token is never a customer setup task. If Instagram
-        // Login is unavailable, that is a deployment issue for us to resolve.
+        // An account ID or token is never a customer setup task. If OAuth is
+        // unavailable, that is a deployment issue for us to resolve.
         fields: [],
         oauth: adapter.oauth
           ? {
@@ -59,15 +57,13 @@ export default async function SettingsPage({
 
   return (
     <main className="pb-24 grid gap-16">
-      {/* Plan first. It is the one section whose state changes what every
-          other section on this page is allowed to do. */}
-      <section id="plan">
-        <h1 className="text-3xl font-bold tracking-tight">Plan</h1>
+      {/* Credits first. Nothing on this page is gated any more, but this is
+          still the section that decides whether the rest of it will do
+          anything tonight. */}
+      <section id="credits">
+        <h1 className="text-3xl font-bold tracking-tight">Credits</h1>
         <div className="mt-8 max-w-2xl">
-          <PlanPanel
-            tier={tier}
-            quota={quota ? { used: quota.used, limit: quota.limit } : null}
-          />
+          <CreditPanel account={account} />
         </div>
       </section>
 
@@ -78,15 +74,15 @@ export default async function SettingsPage({
           reaches the posting hour. A day can only ever generate once.
         </p>
         <div className="mt-8">
-          <ScheduleForm brand={brand} limits={tier.limits} />
+          <ScheduleForm brand={brand} />
         </div>
       </section>
 
       <section>
         <h2 className="text-2xl font-semibold tracking-tight">Accounts</h2>
         <p className="mt-3 text-muted-foreground max-w-2xl">
-          Connect Instagram once and Carouly handles the rest. Access is
-          encrypted, renewed automatically, and never shown in your browser.
+          Connect Instagram or TikTok once and Carouly handles the rest. Access
+          is encrypted, renewed automatically, and never shown in your browser.
         </p>
         <div className="mt-8">
           <ConnectionsPanel

@@ -25,7 +25,7 @@ export default function PrivacyPage() {
       </p>
       <p>
         Everything else is what you type in: your brand profile, your keyword
-        bank, your carousels, and the schedule you set. Generated slides are
+        bank, your posts, and the schedule you set. Generated slides are
         stored as images in Supabase Storage.
       </p>
 
@@ -33,7 +33,7 @@ export default function PrivacyPage() {
       <p>
         When you connect Instagram, LinkedIn, X or a Facebook Page, we store the
         access token that platform issues us, encrypted at rest. It is used for
-        one thing: publishing the carousels you scheduled. Disconnecting an
+        one thing: publishing the posts you scheduled. Disconnecting an
         account deletes the token.
       </p>
 
@@ -63,7 +63,7 @@ export default function PrivacyPage() {
 
       <h2>Deleting your account</h2>
       <p>
-        Email us and we will delete your brand, keywords, carousels and stored
+        Email us and we will delete your brand, keywords, posts and stored
         images, and revoke every social token, within 30 days. Request logs held
         by our hosting provider expire on their own retention schedule.
       </p>

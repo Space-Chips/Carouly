@@ -19,14 +19,14 @@ export default function TermsPage() {
 
       <h2>What the service does</h2>
       <p>
-        Carouly writes, designs and publishes social carousels on
+        Carouly writes, designs and publishes social posts on
         your behalf, using the brand profile and schedule you provide. You stay
         responsible for what goes out under your name.
       </p>
 
       <h2>Your content</h2>
       <p>
-        You own your brand profile and the carousels generated for you, and you
+        You own your brand profile and the posts generated for you, and you
         are free to export and use them anywhere. You grant us only the licence
         needed to store them, render them and publish them to the accounts you
         connected.
@@ -35,7 +35,7 @@ export default function TermsPage() {
       <h2>Review and accuracy</h2>
       <p>
         The slides are written by a language model. It can be wrong. If accuracy
-        matters in your field, turn off auto publish and read each carousel
+        matters in your field, turn off auto publish and read each post
         before it goes out. We are not liable for claims made in content you
         published.
       </p>

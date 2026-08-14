@@ -50,7 +50,7 @@ const CONCURRENCY = 10;
 /** Hard ceiling on HTTP requests per research run. */
 const MAX_QUERIES = 140;
 
-/** Question forms — these surface the informational intent a tip carousel serves. */
+/** Question forms — these surface the informational intent a tip post serves. */
 const QUESTION_PATTERNS = [
   (s: string) => `how to ${s}`,
   (s: string) => `how do you ${s}`,

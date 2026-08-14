@@ -12,6 +12,13 @@ export type PublishResult = {
   permalink?: string;
 };
 
+/** A rendered vertical video ready for a short-form post. */
+export type VideoPublishPayload = {
+  videoUrl: string;
+  caption: string;
+  hashtags: string[];
+};
+
 /**
  * Everything a finished OAuth handshake produces. `credentials` is the only
  * part that gets encrypted; the rest is display metadata and refresh
@@ -99,6 +106,11 @@ export type Adapter<C = Record<string, string>> = {
   /** Present when the platform can be connected in one click. */
   oauth?: OAuthProvider<C>;
   publish: (credentials: C, payload: PublishPayload) => Promise<PublishResult>;
+  /** Present for platforms that support posting a rendered video. */
+  publishVideo?: (
+    credentials: C,
+    payload: VideoPublishPayload
+  ) => Promise<PublishResult>;
 };
 
 export type InstagramCredentials = {
@@ -139,7 +151,10 @@ export type XCredentials = {
 };
 
 /** Caption + hashtags, formatted the way each network expects. */
-export const composeCaption = (payload: PublishPayload, maxLength?: number) => {
+export const composeCaption = (
+  payload: Pick<PublishPayload, "caption" | "hashtags">,
+  maxLength?: number
+) => {
   const tags = payload.hashtags.map((t) => `#${t}`).join(" ");
   const full = [payload.caption, tags].filter(Boolean).join("\n\n");
 

@@ -5,33 +5,24 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 
 const sections = [
-  { href: "#example", label: "What it posts" },
+  { href: "#work", label: "What it makes" },
   { href: "#run", label: "How it works" },
   { href: "#faq", label: "Questions" },
 ];
 
 /**
- * The marketing nav: a floating pill detached from the top edge, so the hero
- * reads as a full canvas with something resting on it rather than as a page
+ * The marketing nav: a floating white pill detached from the top edge, so the
+ * hero reads as a full canvas with something resting on it rather than as a page
  * sitting under a header bar. The app keeps its ordinary sticky header — see
  * components/Navbar.tsx, which hands off to this component only on "/".
+ *
+ * The active link is marked by a filled capsule rather than a colour change.
+ * On paper a grey-to-black text shift at 14px is nearly invisible, and the
+ * capsule also gives the pill something to do while you scroll.
  */
 export default function LandingNav() {
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState<string | null>(null);
-
-  // Nothing is lit until the first section clears the trigger line, which is
-  // exactly the span the hero owns. While the hero's own ember button is on
-  // screen the nav must not show a second one: two identical primary buttons
-  // 500px apart do not double the pull, they split it.
-  const inHero = active === null;
-
-  // Same box in both states — a border in the quiet state and a matching one
-  // under the fill — so the pill cannot change width as it warms up and shove
-  // the links sideways mid scroll.
-  const navCta = inHero
-    ? "border-white/15 bg-transparent text-bone hover:border-white/30 hover:bg-white/5"
-    : "border-ember bg-ember text-white hover:border-ember-lit hover:bg-ember-lit";
 
   // Which section the reader is actually in.
   //
@@ -93,22 +84,25 @@ export default function LandingNav() {
     };
   }, [open]);
 
+  const solidCta =
+    "rounded-full bg-graphite px-3 py-2 text-sm font-semibold text-white outline-none transition-all duration-700 ease-[cubic-bezier(0.32,0.72,0,1)] hover:bg-graphite/85 active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-graphite focus-visible:ring-offset-2 focus-visible:ring-offset-paper";
+
   return (
     <>
       <header className="pointer-events-none fixed inset-x-0 top-0 z-50 mt-6 flex justify-center px-4">
         <nav
           aria-label="Main"
-          className="pointer-events-auto flex w-max items-center gap-2 rounded-full border border-white/10 bg-black/60 p-2 backdrop-blur-xl md:gap-6 md:pl-6"
+          className="pointer-events-auto flex w-max items-center gap-2 rounded-full border border-rule bg-paper-lift/80 p-2 shadow-[0_1px_2px_rgba(12,10,9,0.04),0_8px_24px_-12px_rgba(12,10,9,0.2)] backdrop-blur-xl md:gap-2 md:pl-4"
         >
           <Link
             href="/"
             aria-current="page"
-            className="rounded-full px-2 text-sm font-semibold tracking-tight text-bone outline-none focus-visible:ring-2 focus-visible:ring-ember md:px-0"
+            className="rounded-full px-2 text-sm font-semibold tracking-tight text-graphite outline-none focus-visible:ring-2 focus-visible:ring-graphite md:px-0 md:pr-2"
           >
             Carouly
           </Link>
 
-          <ul className="hidden items-center gap-6 md:flex">
+          <ul className="hidden items-center md:flex">
             {sections.map((section) => {
               const current = active === section.href.slice(1);
 
@@ -117,7 +111,14 @@ export default function LandingNav() {
                   <a
                     href={section.href}
                     aria-current={current ? "true" : undefined}
-                    className="rounded-full text-sm outline-none focus-visible:ring-2 focus-visible:ring-ember"
+                    // Nested radius: the 24px pill has 8px of padding, which
+                    // would give 16px — but a capsule inside a capsule has to
+                    // stay a capsule, so this one keeps its full round.
+                    className={`block rounded-full px-3 py-2 text-sm outline-none transition-colors duration-700 ease-[cubic-bezier(0.32,0.72,0,1)] focus-visible:ring-2 focus-visible:ring-graphite ${
+                      current
+                        ? "bg-paper-sunk font-semibold text-graphite"
+                        : "text-mute hover:text-graphite"
+                    }`}
                   >
                     {/* Both copies share one grid cell. The hidden semibold one
                         sets the width, so the pill cannot resize as the active
@@ -129,13 +130,7 @@ export default function LandingNav() {
                       >
                         {section.label}
                       </span>
-                      <span
-                        className={`col-start-1 row-start-1 transition-colors duration-700 ease-[cubic-bezier(0.32,0.72,0,1)] ${
-                          current
-                            ? "font-semibold text-bone"
-                            : "text-dim hover:text-bone"
-                        }`}
-                      >
+                      <span className="col-start-1 row-start-1">
                         {section.label}
                       </span>
                     </span>
@@ -145,27 +140,20 @@ export default function LandingNav() {
             })}
           </ul>
 
-          <div className="hidden items-center gap-4 md:flex">
+          <div className="hidden items-center gap-2 md:flex">
             <Show when="signed-out">
               <SignInButton>
-                <button className="rounded-full text-sm text-dim outline-none transition-colors duration-700 ease-[cubic-bezier(0.32,0.72,0,1)] hover:text-bone focus-visible:ring-2 focus-visible:ring-ember">
+                <button className="rounded-full px-3 py-2 text-sm text-mute outline-none transition-colors duration-700 ease-[cubic-bezier(0.32,0.72,0,1)] hover:text-graphite focus-visible:ring-2 focus-visible:ring-graphite">
                   Sign in
                 </button>
               </SignInButton>
               <SignUpButton>
-                <button
-                  className={`rounded-full border px-3 py-2 text-sm font-semibold outline-none transition-all duration-700 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-ember focus-visible:ring-offset-2 focus-visible:ring-offset-black ${navCta}`}
-                >
-                  Automate now
-                </button>
+                <button className={solidCta}>Start free</button>
               </SignUpButton>
             </Show>
             <Show when="signed-in">
-              <Link
-                href="/dashboard"
-                className={`rounded-full border px-3 py-2 text-sm font-semibold outline-none transition-all duration-700 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-ember focus-visible:ring-offset-2 focus-visible:ring-offset-black ${navCta}`}
-              >
-                Back to autopilot
+              <Link href="/studio" className={solidCta}>
+                Open the studio
               </Link>
             </Show>
           </div>
@@ -177,15 +165,15 @@ export default function LandingNav() {
             onClick={() => setOpen((value) => !value)}
             aria-expanded={open}
             aria-label={open ? "Close menu" : "Open menu"}
-            className="relative size-8 rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ember md:hidden"
+            className="relative size-8 rounded-full outline-none focus-visible:ring-2 focus-visible:ring-graphite md:hidden"
           >
             <span
-              className={`absolute left-1/2 top-1/2 block h-px w-4 -translate-x-1/2 bg-bone transition-all duration-700 ease-[cubic-bezier(0.32,0.72,0,1)] ${
+              className={`absolute left-1/2 top-1/2 block h-px w-4 -translate-x-1/2 bg-graphite transition-all duration-700 ease-[cubic-bezier(0.32,0.72,0,1)] ${
                 open ? "-translate-y-1/2 rotate-45" : "-translate-y-[5px]"
               }`}
             />
             <span
-              className={`absolute left-1/2 top-1/2 block h-px w-4 -translate-x-1/2 bg-bone transition-all duration-700 ease-[cubic-bezier(0.32,0.72,0,1)] ${
+              className={`absolute left-1/2 top-1/2 block h-px w-4 -translate-x-1/2 bg-graphite transition-all duration-700 ease-[cubic-bezier(0.32,0.72,0,1)] ${
                 open ? "-translate-y-1/2 -rotate-45" : "translate-y-[3px]"
               }`}
             />
@@ -196,7 +184,7 @@ export default function LandingNav() {
       {/* Kept mounted so the links can animate out as well as in. */}
       <div
         aria-hidden={!open}
-        className={`fixed inset-0 z-40 bg-black/80 backdrop-blur-3xl transition-all duration-700 ease-[cubic-bezier(0.32,0.72,0,1)] md:hidden ${
+        className={`fixed inset-0 z-40 bg-paper/80 backdrop-blur-3xl transition-all duration-700 ease-[cubic-bezier(0.32,0.72,0,1)] md:hidden ${
           open ? "opacity-100" : "pointer-events-none opacity-0"
         }`}
       >
@@ -217,8 +205,10 @@ export default function LandingNav() {
                 aria-current={
                   active === section.href.slice(1) ? "true" : undefined
                 }
-                className={`block text-3xl font-semibold tracking-tight outline-none transition-colors duration-700 ease-[cubic-bezier(0.32,0.72,0,1)] focus-visible:ring-2 focus-visible:ring-ember ${
-                  active === section.href.slice(1) ? "text-bone" : "text-dim"
+                className={`block rounded-lg text-3xl font-semibold tracking-tight outline-none transition-colors duration-700 ease-[cubic-bezier(0.32,0.72,0,1)] focus-visible:ring-2 focus-visible:ring-graphite ${
+                  active === section.href.slice(1)
+                    ? "text-graphite"
+                    : "text-mute"
                 }`}
               >
                 {section.label}
@@ -234,23 +224,23 @@ export default function LandingNav() {
           >
             <Show when="signed-out">
               <SignUpButton>
-                <button className="w-full rounded-full bg-ember px-3 py-2 text-base font-semibold text-white outline-none transition-all duration-700 ease-[cubic-bezier(0.32,0.72,0,1)] hover:bg-ember-lit active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-ember">
-                  Automate now
+                <button className="w-full rounded-full bg-graphite px-3 py-2 text-base font-semibold text-white outline-none transition-all duration-700 ease-[cubic-bezier(0.32,0.72,0,1)] hover:bg-graphite/85 active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-graphite">
+                  Start free
                 </button>
               </SignUpButton>
               <SignInButton>
-                <button className="text-base text-dim outline-none transition-colors hover:text-bone focus-visible:ring-2 focus-visible:ring-ember">
+                <button className="rounded-full text-base text-mute outline-none transition-colors hover:text-graphite focus-visible:ring-2 focus-visible:ring-graphite">
                   Sign in
                 </button>
               </SignInButton>
             </Show>
             <Show when="signed-in">
               <Link
-                href="/dashboard"
+                href="/studio"
                 onClick={() => setOpen(false)}
-                className="w-full rounded-full bg-ember px-3 py-2 text-center text-base font-semibold text-white outline-none transition-all duration-700 ease-[cubic-bezier(0.32,0.72,0,1)] hover:bg-ember-lit active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-ember"
+                className="w-full rounded-full bg-graphite px-3 py-2 text-center text-base font-semibold text-white outline-none transition-all duration-700 ease-[cubic-bezier(0.32,0.72,0,1)] hover:bg-graphite/85 active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-graphite"
               >
-                Back to autopilot
+                Open the studio
               </Link>
             </Show>
           </li>

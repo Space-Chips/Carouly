@@ -6,7 +6,8 @@ import { WriteOneButton } from "@/components/CarouselActions";
 import StatusPill from "@/components/StatusPill";
 import { getBrand } from "@/lib/actions/brand.actions";
 import { getCarousels } from "@/lib/actions/carousel.actions";
-import { getQuota } from "@/lib/billing";
+import { getBalance } from "@/lib/credits/ledger";
+import { CAROUSEL_COST } from "@/lib/credits/prices";
 
 export default async function CarouselsPage() {
   const { userId } = await auth();
@@ -14,26 +15,26 @@ export default async function CarouselsPage() {
 
   if (!brand) redirect("/onboarding");
 
-  const [carousels, quota] = await Promise.all([
+  const [carousels, balance] = await Promise.all([
     getCarousels(),
-    getQuota(userId!),
+    getBalance(userId!),
   ]);
 
   return (
     <main className="pb-24">
       <div className="rise flex flex-wrap items-end justify-between gap-6">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Carousels</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Posts</h1>
           <p className="mt-3 text-muted-foreground">
             Everything written for {brand.name}, newest first.
           </p>
         </div>
-        <WriteOneButton exhausted={quota.exhausted} />
+        <WriteOneButton broke={balance < CAROUSEL_COST} />
       </div>
 
       {carousels.length === 0 ? (
         <div className="rise stagger-1 mt-10 rounded-xl border border-dashed border-white/15 p-12 text-center">
-          <p className="text-sm font-medium">No carousels yet</p>
+          <p className="text-sm font-medium">No posts yet</p>
           <p className="mt-1 text-sm text-muted-foreground">
             Write one now, or turn on autopilot in Settings and they will
             appear here daily.

@@ -3,12 +3,13 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
 
-import UpgradeLink from "@/components/upgrade/UpgradeLink";
+import BuyLink from "@/components/credits/BuyLink";
 import { Button } from "@/components/ui/button";
 import {
   generateCarouselNow,
   runTodayNow,
 } from "@/lib/actions/carousel.actions";
+import { CAROUSEL_COST, credits } from "@/lib/credits/prices";
 
 /**
  * Generation is a 30-60 second server round trip (LLM copy, then an image
@@ -24,16 +25,14 @@ export default function GenerationPanel({
   autopilot,
   nextRun,
   timezone,
-  isPaid,
-  remaining,
+  balance,
 }: {
   postsPerDay: number;
   autopilot: boolean;
   nextRun: string;
   timezone: string;
-  isPaid: boolean;
-  /** Free carousels left. Null on a paid plan, where there is no ceiling. */
-  remaining: number | null;
+  /** Credits on the account, which is what decides whether these buttons work. */
+  balance: number;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -41,7 +40,9 @@ export default function GenerationPanel({
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const elapsed = useElapsed(pending);
-  const exhausted = remaining !== null && remaining <= 0;
+  // One post is the smallest thing either button can do, so it is the line.
+  const broke = balance < CAROUSEL_COST;
+  const batchCost = postsPerDay * CAROUSEL_COST;
 
   const run = (name: string, fn: () => Promise<void>) => {
     setError(null);
@@ -66,18 +67,18 @@ export default function GenerationPanel({
           <h2 className="font-medium">Today</h2>
           <p className="text-sm text-muted-foreground mt-1">
             {autopilot
-              ? `${postsPerDay} carousel${postsPerDay > 1 ? "s" : ""} · next batch ${nextRun} (${timezone})`
+              ? `${postsPerDay} post${postsPerDay > 1 ? "s" : ""} · next batch ${nextRun} (${timezone})`
               : "Autopilot is off — nothing publishes on its own."}
           </p>
         </div>
 
-        {/* The gate is enforced in the action either way. Swapping the button
-            out here is what makes the refusal readable: a disabled control
-            that throws on click tells the user nothing about why. */}
-        {exhausted ? (
-          <UpgradeLink reason="quota" variant="quiet">
-            Start my free trial
-          </UpgradeLink>
+        {/* The charge happens in the action either way. Swapping the button out
+            here is what makes the refusal readable: a disabled control that
+            throws on click tells somebody nothing about why. */}
+        {broke ? (
+          <BuyLink gate="carousel" need={CAROUSEL_COST} variant="quiet">
+            Out of credits — top up
+          </BuyLink>
         ) : !pending ? (
           <div className="flex gap-2">
             <Button
@@ -90,17 +91,20 @@ export default function GenerationPanel({
             >
               Write one now
             </Button>
-            {/* Absent rather than clamped on the free plan: the action caps a
-                free batch at one carousel, so offering a button labelled
-                "today's batch" would promise something it will not do. */}
-            {isPaid ? (
+            {/* Offered to everybody now, with its price on it. The batch used
+                to be hidden from free accounts because the action silently
+                capped it at one post — a button that does not do what it says.
+                Metered, it does exactly what it says and stops when the balance
+                runs out, so the honest thing is to show the bill and let
+                somebody decide. */}
+            {postsPerDay > 1 ? (
               <Button
                 variant="secondary"
                 onClick={() =>
                   run("batch", async () => {
                     const result = await runTodayNow();
                     setMessage(
-                      `Created ${result.created.length} carousel${
+                      `Created ${result.created.length} post${
                         result.created.length === 1 ? "" : "s"
                       }${result.published ? `, published ${result.published} time(s)` : ""}.${
                         result.errors.length
@@ -112,7 +116,7 @@ export default function GenerationPanel({
                   })
                 }
               >
-                Run today&apos;s batch
+                Run today&apos;s batch · {credits(batchCost)}
               </Button>
             ) : null}
           </div>
@@ -127,8 +131,8 @@ export default function GenerationPanel({
         <div className="border-t border-white/10 p-5">
           <p className="text-sm">
             {label === "batch"
-              ? `Writing today's ${postsPerDay} carousel${postsPerDay > 1 ? "s" : ""}…`
-              : "Writing a carousel…"}
+              ? `Writing today's ${postsPerDay} post${postsPerDay > 1 ? "s" : ""}…`
+              : "Writing a post…"}
           </p>
           <p className="text-xs text-muted-foreground mt-1">
             Choosing the top-ranked keyword, writing the slides, generating the

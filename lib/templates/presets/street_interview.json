@@ -1,0 +1,96 @@
+{
+  "id": "street_interview",
+  "name": "Street Interview",
+  "description": "One stranger stopped on a pavement and asked a question they answer honestly, with the question itself burned in as the caption. The interviewer never appears. Reads as overheard rather than advertised, which is why it survives a feed that skips anything that opens like an ad.",
+  "aspect": "9:16",
+  "duration_range": [14, 20],
+  "match": {
+    "creative_format": ["street-interview", "vox-pop", "ugc-testimonial"],
+    "preferred_types": ["UGC", "Interview", "Social proof"],
+    "funnel_stage": ["awareness"],
+    "tone": ["candid", "dry-wit", "plain-spoken", "contrarian"],
+    "settings": ["city-street", "market", "campus", "outdoors"]
+  },
+  "inputs": {
+    "question": { "description": "The question asked off camera. Short, specific, and awkward enough to be worth answering.", "required": true },
+    "answer": { "description": "The honest answer that lands the brand's point without naming it like an ad.", "required": true },
+    "cta": { "description": "The last line, said by the same person, that names the brand.", "required": true },
+    "presenter": { "description": "Casting note, e.g. 'woman, early 40s, commuter, coat, mid-hurry'.", "required": false }
+  },
+  "output": "{{final}}",
+
+  "nodes": [
+    {
+      "id": "style",
+      "type": "const",
+      "value": {
+        "frame": "Vertical 9:16 photograph taken on a phone held at arm's length by someone standing in front of the subject, outdoors on a real street. Photorealistic. Overcast daylight, flat and even, no golden hour. Passers-by out of focus behind them, real shopfronts and street furniture, litter and signage. Ordinary outerwear with real creases. Slightly off-centre framing, mild phone-lens distortion, faint motion blur at the edges. The subject is mid-answer, looking slightly off-lens toward the person holding the phone, both eyes open.",
+        "motion": "Keep the exact same person, hair, clothing and street as the reference image. Handheld phone camera, small unsteady drift, occasional refocus. Traffic and pedestrians moving behind them. The person answers a question out loud, gesturing lightly, thinking as they speak.",
+        "negative": "eyes closed, mid-blink, back to camera, sunglasses covering eyes, studio lighting, cinematic colour grade, golden hour, shallow cinema bokeh, airbrushed skin, plastic skin, beauty filter, CGI, 3D render, stock photo, model headshot, polished commercial look, watermark, text overlay, subtitles, extra fingers, warped hands"
+      }
+    },
+    {
+      "id": "casting",
+      "type": "llm.json",
+      "system": "You direct man-on-the-street interviews for short-form video. The people you cast look like they were genuinely stopped on the way somewhere. Their answers hesitate, correct themselves, and land on something specific. Nobody ever sounds like they are reading a script.",
+      "prompt": "Brand: {{brand.brand_name}} — {{brand.brand_summary}}\nVoice: {{brand.voice_tone}}\nAudience: {{brand.target_personas}}\n\nQuestion asked off camera: {{inputs.question}}\nThe answer to land: {{inputs.answer}}\nClosing line: {{inputs.cta}}\nCasting note: {{inputs.presenter}}\n\nCast ONE person who plausibly walks down that street and write a 3-beat interview: beat 1 is the surprised first reaction to the question, beat 2 is the real answer, beat 3 names the brand as an aside rather than a slogan.\n\n`actor` must pin identity down hard enough to repeat: apparent age, build, hair, face details, exact outerwear including colour and fabric, and the specific stretch of street with named things in it.\n\n`master_frame_prompt` is a still-image prompt for the establishing frame of this person standing on that street, mid-answer. Describe the person, their clothing, the street and the light — no camera brand names, no quality adjectives, no text.\n\nFor each of the 3 shots write:\n- `frame_prompt`: an EDIT instruction on the master frame. Always start with \"Same person, same hair, same clothes, same street.\" then change only expression, head angle and framing.\n- `motion_prompt`: what happens in the 5 seconds AFTER that frame — delivery only. Include the spoken line in double quotes.\n- `line`: just the spoken words, at most 12 words so it fits in 5 seconds.\n\n`on_screen_text`: the first caption is the question in quotes, then one caption per remaining beat, at most 6 words each.",
+      "schema": {
+        "actor": "one paragraph pinning down age, build, hair, face, exact outerwear and the specific street",
+        "master_frame_prompt": "still-image prompt for the establishing frame",
+        "shots": [{ "frame_prompt": "edit instruction from the master frame", "motion_prompt": "delivery, with the spoken line in quotes", "line": "<=12 words", "seconds": 5 }],
+        "on_screen_text": ["the question in quotes", "<=6 words", "<=6 words"]
+      },
+      "temperature": 0.9
+    },
+    {
+      "id": "master",
+      "role": "identity",
+      "type": "fal.image",
+      "model": "image.nano_banana",
+      "prompt": "{{casting.master_frame_prompt}}\n\n{{style.frame}}",
+      "negative_prompt": "{{style.negative}}",
+      "aspect_ratio": "9:16"
+    },
+    {
+      "id": "frames",
+      "type": "fal.image_edit",
+      "foreach": "{{casting.shots}}",
+      "as": "shot",
+      "model": "edit.nano_banana",
+      "image_url": "{{master.url}}",
+      "prompt": "{{shot.frame_prompt}}\n\nPreserve the person's identity, facial structure, hair, outerwear, street and light from the reference image exactly. Change only expression, head angle and framing. Keep the eyes open.",
+      "aspect_ratio": "9:16"
+    },
+    {
+      "id": "beats",
+      "type": "zip",
+      "shot": "{{casting.shots}}",
+      "frame": "{{frames}}"
+    },
+    {
+      "id": "clips",
+      "type": "fal.video",
+      "foreach": "{{beats}}",
+      "as": "b",
+      "model": "video.veo3_fast_i2v",
+      "image_url": "{{b.frame.url}}",
+      "prompt": "{{b.shot.motion_prompt}}\n\n{{style.motion}}",
+      "negative_prompt": "{{style.negative}}",
+      "aspect_ratio": "9:16",
+      "duration": 5
+    },
+    {
+      "id": "cut",
+      "type": "video.concat",
+      "clips": "{{clips}}",
+      "clip_seconds": 5
+    },
+    {
+      "id": "final",
+      "type": "video.captions",
+      "video": "{{cut}}",
+      "lines": "{{casting.on_screen_text}}",
+      "clip_seconds": [5, 5, 5]
+    }
+  ]
+}

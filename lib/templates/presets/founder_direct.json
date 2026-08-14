@@ -1,0 +1,96 @@
+{
+  "id": "founder_direct",
+  "name": "Founder to Camera",
+  "description": "The person who built the thing says why, standing in the place it gets made. Steadier and slower than the UGC formats — one master frame, three beats, no phone-selfie shake — because a founder filmed like a customer reads as a costume. The format for a brand whose story is its differentiator.",
+  "aspect": "9:16",
+  "duration_range": [18, 24],
+  "match": {
+    "creative_format": ["founder-story", "brand-story", "talking-head", "manifesto"],
+    "preferred_types": ["Founder", "Story", "Brand"],
+    "funnel_stage": ["awareness", "consideration"],
+    "tone": ["earnest", "confident", "contrarian", "plain-spoken"],
+    "settings": ["workshop", "warehouse", "studio", "office", "kitchen"]
+  },
+  "inputs": {
+    "why": { "description": "Why this exists at all, in the founder's own terms. Not a benefit — a reason.", "required": true },
+    "proof": { "description": "The concrete thing that proves they mean it: a number, a decision, a refusal.", "required": true },
+    "cta": { "description": "Closing spoken call to action.", "required": true },
+    "presenter": { "description": "Casting note, e.g. 'woman, 40s, founder, workshop apron, quiet and certain'.", "required": false }
+  },
+  "output": "{{final}}",
+
+  "nodes": [
+    {
+      "id": "style",
+      "type": "const",
+      "value": {
+        "frame": "Vertical 9:16 photorealistic portrait, shot on a phone resting on something rather than held — the framing is steady and slightly low. Natural light from a large window or an open door, one direction, soft falloff, real shadows on the wall behind. The working space is genuinely in use: tools, stock, materials, an unswept floor. Workwear with real wear on it. Skin has visible texture, pores and lines, no retouching. Both eyes open, looking directly into the lens, caught mid-sentence.",
+        "motion": "Keep the exact same person, hair, wardrobe and workspace as the reference image. The camera is static on a surface, no handheld shake, no push in. The person speaks directly to the lens, weight shifting slightly, hands moving when they explain something. Ambient depth behind them: dust in the light, something moving far back in the room.",
+        "negative": "eyes closed, mid-blink, looking away, head turned away, profile view, handheld shake, whip pan, studio lighting, three-point lighting, corporate headshot, green screen, cinematic teal and orange grade, airbrushed skin, plastic skin, beauty filter, CGI, 3D render, stock photo, polished commercial look, watermark, text overlay, subtitles, extra fingers, warped hands"
+      }
+    },
+    {
+      "id": "casting",
+      "type": "llm.json",
+      "system": "You direct founder-led brand video. Founders you write sound like they are answering a friend's question, not delivering a keynote. They name specifics — the year, the mistake, the number — and they never use the word 'passionate'.",
+      "prompt": "Brand: {{brand.brand_name}} — {{brand.brand_summary}}\nVoice: {{brand.voice_tone}}\nValue props: {{brand.value_props}}\nAudience: {{brand.target_personas}}\n\nWhy it exists: {{inputs.why}}\nThe proof: {{inputs.proof}}\nCTA: {{inputs.cta}}\nCasting note: {{inputs.presenter}}\n\nCast the founder and write 3 beats to camera: beat 1 is the reason this exists, beat 2 is the proof they mean it, beat 3 is the invitation.\n\n`actor` must pin identity down hard enough to repeat: apparent age, build, hair, face details, exact workwear including colour and fabric, and the specific working space with named objects in it.\n\n`master_frame_prompt` is a still-image prompt for the opening frame of this person standing in that space, looking into the lens. Describe the person, their workwear, the room and the light — no camera brand names, no quality adjectives, no text.\n\nFor each of the 3 shots write:\n- `frame_prompt`: an EDIT instruction on the master frame. Always start with \"Same person, same hair, same clothes, same room, still looking into the lens.\" then change only expression, posture and how much of the room is visible. Beat 2 may come closer; beat 3 should open out and soften.\n- `motion_prompt`: what happens in the 8 seconds AFTER that frame — delivery only. Include the spoken line in double quotes.\n- `line`: just the spoken words, at most 18 words so it fits in 8 seconds.\n\n`on_screen_text`: one caption per beat, at most 5 words each.",
+      "schema": {
+        "actor": "one paragraph pinning down age, build, hair, face, exact workwear and the specific working space",
+        "master_frame_prompt": "still-image prompt for the opening frame",
+        "shots": [{ "frame_prompt": "edit instruction from the master frame", "motion_prompt": "delivery, with the spoken line in quotes", "line": "<=18 words", "seconds": 8 }],
+        "on_screen_text": ["<=5 word caption per beat"]
+      },
+      "temperature": 0.8
+    },
+    {
+      "id": "master",
+      "role": "identity",
+      "type": "fal.image",
+      "model": "image.nano_banana",
+      "prompt": "{{casting.master_frame_prompt}}\n\n{{style.frame}}",
+      "negative_prompt": "{{style.negative}}",
+      "aspect_ratio": "9:16"
+    },
+    {
+      "id": "frames",
+      "type": "fal.image_edit",
+      "foreach": "{{casting.shots}}",
+      "as": "shot",
+      "model": "edit.nano_banana",
+      "image_url": "{{master.url}}",
+      "prompt": "{{shot.frame_prompt}}\n\nPreserve the person's identity, facial structure, hair, workwear, room and lighting from the reference image exactly. Change only expression, posture and framing. Keep the eyes open and on the lens.",
+      "aspect_ratio": "9:16"
+    },
+    {
+      "id": "beats",
+      "type": "zip",
+      "shot": "{{casting.shots}}",
+      "frame": "{{frames}}"
+    },
+    {
+      "id": "clips",
+      "type": "fal.video",
+      "foreach": "{{beats}}",
+      "as": "b",
+      "model": "video.veo3_fast_i2v",
+      "image_url": "{{b.frame.url}}",
+      "prompt": "{{b.shot.motion_prompt}}\n\n{{style.motion}}",
+      "negative_prompt": "{{style.negative}}",
+      "aspect_ratio": "9:16",
+      "duration": 8
+    },
+    {
+      "id": "cut",
+      "type": "video.concat",
+      "clips": "{{clips}}",
+      "clip_seconds": 8
+    },
+    {
+      "id": "final",
+      "type": "video.captions",
+      "video": "{{cut}}",
+      "lines": "{{casting.on_screen_text}}",
+      "clip_seconds": [8, 8, 8]
+    }
+  ]
+}

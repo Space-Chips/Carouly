@@ -1,0 +1,26 @@
+{
+  "ugc_talking_head": {
+    "preview": "/templates/ugc_talking_head.mp4",
+    "still": "/templates/ugc_talking_head.jpg",
+    "seconds": 15,
+    "silent": false,
+    "madeAt": "2026-08-09",
+    "backend": "local"
+  },
+  "ugc_problem_solution": {
+    "preview": "/templates/ugc_problem_solution.mp4",
+    "still": "/templates/ugc_problem_solution.jpg",
+    "seconds": 15,
+    "silent": false,
+    "madeAt": "2026-08-09",
+    "backend": "local"
+  },
+  "demo_screen_vo": {
+    "preview": "/templates/demo_screen_vo.mp4",
+    "still": "/templates/demo_screen_vo.jpg",
+    "seconds": 10,
+    "silent": false,
+    "madeAt": "2026-08-09",
+    "backend": "local"
+  }
+}

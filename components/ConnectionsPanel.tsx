@@ -46,8 +46,8 @@ export type ConnectionInfo = {
 /**
  * Account connections.
  *
- * Instagram is one click: the button hands the user to Instagram's own login,
- * and the callback stores a long-lived token that this app keeps refreshing.
+ * Instagram and TikTok are one click: the button hands the user to the
+ * platform's own login, and the callback stores tokens this app keeps fresh.
  */
 export default function ConnectionsPanel({
   adapters,
@@ -65,7 +65,7 @@ export default function ConnectionsPanel({
     <div className="grid gap-4">
       {connected ? (
         <p className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-300">
-          {connected} is connected. Carousels will publish there automatically.
+          {connected} is connected. Posts will publish there automatically.
         </p>
       ) : null}
 
@@ -232,7 +232,7 @@ function ConnectionCard({
 
       {needsSetup && adapter.oauth ? (
         <p className="text-xs text-muted-foreground border-t border-white/10 pt-3">
-          Instagram connection is temporarily unavailable. Please contact us
+          This connection is temporarily unavailable. Please contact us
           and we’ll get it fixed.
         </p>
       ) : null}
