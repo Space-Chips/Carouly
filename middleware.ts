@@ -34,27 +34,10 @@ export default clerkMiddleware(
     }
 
     if (!isPublicRoute(request)) {
-      await auth.protect();
+      await auth.protect({
+        unauthenticatedUrl: new URL("/sign-in", request.url).toString(),
+      });
     }
-  },
-  {
-    /**
-     * Where `auth.protect()` sends a signed-out visitor.
-     *
-     * These have to be here and not only on `ClerkProvider`. The provider is a
-     * React context and this runs in the edge, so with the option set in just
-     * one place the app said two different things: client-side buttons opened
-     * the in-app pages while every protected navigation — which is the path
-     * almost everybody actually takes, straight off the hero box — was redirected
-     * to Clerk's hosted Account Portal on `*.accounts.dev`. That is a different
-     * domain, in Clerk's purple, titled "My Application", and it is where the
-     * funnel had been leaking the entire time.
-     *
-     * `redirect_url` is appended by Clerk, so `?site=` survives the round trip
-     * and the auth screen can name the address it is about to read.
-     */
-    signInUrl: "/sign-in",
-    signUpUrl: "/sign-up",
   }
 );
 
