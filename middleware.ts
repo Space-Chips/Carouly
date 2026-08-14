@@ -1,8 +1,8 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 
-// The marketing page, its legal pages, the auth screens and the cron endpoint
-// are the only things reachable without a session. The cron route
-// authenticates itself with CRON_SECRET instead.
+// The marketing page, its legal pages, the auth screens and the cron/worker
+// endpoints are the only things reachable without a session. Those endpoints
+// authenticate themselves with CRON_SECRET instead.
 const isPublicRoute = createRouteMatcher([
   "/",
   "/privacy",
@@ -10,6 +10,7 @@ const isPublicRoute = createRouteMatcher([
   "/sign-in(.*)",
   "/sign-up(.*)",
   "/api/cron(.*)",
+  "/api/render/worker(.*)",
   // Clerk posts here with a Svix signature, not a session. The route verifies
   // that signature itself — see app/api/webhooks/clerk.
   "/api/webhooks(.*)",
