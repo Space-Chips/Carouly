@@ -219,6 +219,63 @@ export const burnCaptions = async (
   }
 };
 
+/** Composite copy that is authored as part of the picture, not as dialogue. */
+export const burnTextOverlays = async (
+  video: string,
+  items: { text: string; start: number; end: number; position?: string }[],
+  out: string
+) => {
+  const { width, height } = await probeSize(video);
+  if (!width) throw new Error("could not read the video's size");
+
+  const dir = await mkdtemp(join(tmpdir(), "carouly-text-"));
+
+  try {
+    const inputs = ["-i", video];
+    const filters: string[] = [];
+    let label = "0:v";
+
+    for (const [index, item] of items.entries()) {
+      const file = join(dir, `text${index}.png`);
+      await writeFile(file, await captionPng(item.text, width));
+      inputs.push("-i", file);
+
+      const next = `v${index}`;
+      const y =
+        item.position === "top"
+          ? Math.round(height * 0.1)
+          : item.position === "center"
+            ? "(H-h)/2"
+            : `H-h-${Math.round(height * 0.12)}`;
+
+      filters.push(
+        `[${label}][${index + 1}:v]overlay=x=(W-w)/2:y=${y}:` +
+          `enable='between(t,${item.start.toFixed(2)},${item.end.toFixed(2)})'[${next}]`
+      );
+      label = next;
+    }
+
+    const { code, stderr } = await ffmpeg([
+      ...inputs,
+      "-filter_complex", filters.join(";"),
+      "-map", `[${label}]`,
+      "-map", "0:a?",
+      "-c:a", "copy",
+      "-c:v", "libx264",
+      "-preset", "veryfast",
+      "-crf", "26",
+      "-pix_fmt", "yuv420p",
+      out,
+    ]);
+
+    if (code !== 0) throw new Error(`text overlay burn failed: ${stderr.slice(0, 400)}`);
+
+    return out;
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+};
+
 export const listOutputs = async (dir: string) => {
   try {
     return await readdir(dir);

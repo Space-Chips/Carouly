@@ -13,9 +13,11 @@
  */
 
 import beforeAfter from "./presets/before_after.json";
+import aiToolsRoundup from "./presets/ai_tools_roundup.json";
 import demoScreenVo from "./presets/demo_screen_vo.json";
 import founderDirect from "./presets/founder_direct.json";
 import povCaptions from "./presets/pov_captions.json";
+import povScreenDemo from "./presets/pov_screen_demo.json";
 import streetInterview from "./presets/street_interview.json";
 import threeReasons from "./presets/three_reasons.json";
 import threeVoices from "./presets/three_voices.json";
@@ -46,6 +48,8 @@ const RAW = [
   usVsThem,
   threeVoices,
   demoScreenVo,
+  povScreenDemo,
+  aiToolsRoundup,
   povCaptions,
 ] as Record<string, unknown>[];
 

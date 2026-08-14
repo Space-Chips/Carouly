@@ -1,0 +1,55 @@
+{
+  "id": "ai_tools_roundup",
+  "name": "Three Tools Roundup",
+  "description": "A fast three-pick roundup: one useful tool or feature per beat, with its number and takeaway placed over the shot. Built for educational product and AI content.",
+  "aspect": "9:16",
+  "duration_range": [12, 18],
+  "match": {
+    "creative_format": ["roundup", "listicle", "product-demo", "screen-recording"],
+    "preferred_types": ["Demo", "Animation", "Product"],
+    "funnel_stage": ["awareness", "consideration"],
+    "tone": ["helpful", "confident", "plain-spoken"],
+    "settings": ["screen", "app-ui", "desk"]
+  },
+  "inputs": {
+    "picks": { "description": "Three tools, features, or use cases to rank, as a list.", "required": true },
+    "why": { "description": "The shared outcome that makes the three picks useful.", "required": true },
+    "cta": { "description": "A simple final call to action.", "required": true }
+  },
+  "output": "{{final}}",
+  "nodes": [
+    {
+      "id": "script",
+      "type": "llm.json",
+      "system": "You write tight educational short-form video. Give each of three picks one concrete benefit. On-screen text is a hook or label, not a transcript.",
+      "prompt": "Brand: {{brand.brand_name}} — {{brand.brand_summary}}\nPicks: {{inputs.picks}}\nShared outcome: {{inputs.why}}\nCTA: {{inputs.cta}}\n\nWrite three 5-second silent b-roll shots, each showing one pick being used on a desk or screen. For each write `frame_prompt` and `motion_prompt`, both with no text in the imagery. `overlays` has exactly 4 entries: a top hook from 0 to 3 seconds and one bottom label for each beat. Each label begins with 1, 2, or 3. Include start/end in seconds and position top or bottom.",
+      "schema": { "shots": [{ "frame_prompt": "still prompt", "motion_prompt": "physical action" }], "overlays": [{ "text": "<=6 words", "start": 0, "end": 3, "position": "top" }] }
+    },
+    {
+      "id": "frames",
+      "type": "fal.image",
+      "foreach": "{{script.shots}}",
+      "as": "shot",
+      "model": "image.nano_banana",
+      "prompt": "{{shot.frame_prompt}}\nVertical 9:16, real desk or app screen, natural light, no visible lettering or rendered text.",
+      "negative_prompt": "watermark, text overlay, subtitles, garbled UI, stock-photo polish",
+      "aspect_ratio": "9:16"
+    },
+    { "id": "beats", "type": "zip", "shot": "{{script.shots}}", "frame": "{{frames}}" },
+    {
+      "id": "clips",
+      "type": "fal.video",
+      "foreach": "{{beats}}",
+      "as": "beat",
+      "model": "video.kling_i2v",
+      "silent": true,
+      "image_url": "{{beat.frame.url}}",
+      "prompt": "{{beat.shot.motion_prompt}} Continuous 5-second vertical phone footage. No speech and no generated words on screen.",
+      "negative_prompt": "watermark, text overlay, subtitles, garbled interface text",
+      "aspect_ratio": "9:16",
+      "duration": 5
+    },
+    { "id": "cut", "type": "video.concat", "clips": "{{clips}}", "clip_seconds": 5 },
+    { "id": "final", "type": "video.text_overlay", "video": "{{cut}}", "items": "{{script.overlays}}" }
+  ]
+}

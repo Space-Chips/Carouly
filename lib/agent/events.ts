@@ -99,6 +99,8 @@ export type TemplateCandidate = {
    * format on a muted example needs to know which of those they are watching.
    */
   previewSilent?: boolean;
+  /** The card image is supplied visual direction, not a generated example. */
+  previewReference?: boolean;
   /**
    * The agent put this one in front of you, rather than it merely being in the
    * library.

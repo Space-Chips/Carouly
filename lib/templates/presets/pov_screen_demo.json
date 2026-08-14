@@ -1,0 +1,41 @@
+{
+  "id": "pov_screen_demo",
+  "name": "POV Screen Demo",
+  "description": "A first-person product walkthrough built from the real app screens, with a short hook and step labels layered over the interface. Use it when seeing the product work is the proof.",
+  "aspect": "9:16",
+  "duration_range": [12, 18],
+  "match": {
+    "creative_format": ["product-demo", "screen-recording", "pov"],
+    "preferred_types": ["Demo", "Product"],
+    "funnel_stage": ["consideration", "conversion"],
+    "tone": ["plain-spoken", "confident"],
+    "settings": ["screen", "app-ui"]
+  },
+  "inputs": {
+    "hook": { "description": "The short outcome promised in the opening overlay.", "required": true },
+    "steps": { "description": "The 2-3 actions the viewer sees in the product, as a list.", "required": true },
+    "cta": { "description": "The final call to action.", "required": true }
+  },
+  "output": "{{final}}",
+  "nodes": [
+    { "id": "hero", "type": "asset.pick", "role": "product", "index": 0 },
+    {
+      "id": "script",
+      "type": "llm.json",
+      "system": "You write concise on-screen copy for a vertical product walkthrough. The screen is the proof. Keep every line immediately readable and never repeat an interface label.",
+      "prompt": "Brand: {{brand.brand_name}} — {{brand.brand_summary}}\nHook: {{inputs.hook}}\nSteps: {{inputs.steps}}\nCTA: {{inputs.cta}}\n\nWrite copy for one 15-second screen walkthrough. `spoken_line` is optional narration, at most 28 words. `overlays` has exactly 3 entries with `text`, `start`, `end`, and `position`; first is a hook at the top from 0 to 5 seconds, next two name the action or outcome at the bottom. `position` is top, center, or bottom.",
+      "schema": { "spoken_line": "<=28 words", "overlays": [{ "text": "<=5 words", "start": 0, "end": 5, "position": "top" }] }
+    },
+    {
+      "id": "walkthrough",
+      "type": "fal.video",
+      "model": "video.veo3_fast_i2v",
+      "image_url": "{{hero}}",
+      "prompt": "First-person phone screen walkthrough of the supplied real product interface. A cursor or thumb completes the described steps: {{inputs.steps}}. Slow, deliberate movement; preserve all interface pixels and do not generate any new words. A plain narrator says: \"{{script.spoken_line}}\".",
+      "negative_prompt": "watermark, subtitles, added text, distorted UI, garbled interface text",
+      "aspect_ratio": "9:16",
+      "duration": 15
+    },
+    { "id": "final", "type": "video.text_overlay", "video": "{{walkthrough}}", "items": "{{script.overlays}}" }
+  ]
+}

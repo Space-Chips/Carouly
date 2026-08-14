@@ -46,6 +46,8 @@ export const NODE_DOCS: Record<string, string> = {
   "video.concat": "clips (list of clip results), clip_seconds — join in order.",
   "video.captions":
     "video, lines (list of strings), clip_seconds (list) — time the captions and burn them in.",
+  "video.text_overlay":
+    "video, items (list of {text, start, end, position?}) — burn authored text over the picture. position is 'top', 'center', or 'bottom'; use this for hooks and labels, not spoken captions.",
   "asset.pick": "role ('logo'|'product'|'icon'), index — a captured brand asset.",
   "asset.upload": "path — make a local asset reachable by the generators.",
 };
@@ -428,6 +430,44 @@ nodeType("video.captions", async (ctx) => {
     // A caption that would not composite is not worth losing the cut over — the
     // timed track above is still correct and the video still plays.
     return timed;
+  }
+});
+
+/**
+ * Copy that is part of the visual treatment rather than a transcript.
+ *
+ * Composed templates need this distinction: a big opening hook can sit at the
+ * top while dialogue captions still follow the speaker at the bottom. Remote
+ * renders retain the layer as timeline data; the local renderer burns it in.
+ */
+nodeType("video.text_overlay", async (ctx) => {
+  const source = param<Media>(ctx, "video", undefined, true);
+  const result = { ...(typeof source === "string" ? { url: source } : source) };
+  const total = Number(result.seconds ?? 0);
+  const items = (param<unknown[]>(ctx, "items", []) ?? [])
+    .flatMap((item) => (typeof item === "string" ? [{ text: item }] : [item]))
+    .map((item) => {
+      const value = item as Record<string, unknown>;
+      const start = Math.max(0, Number(value.start ?? 0));
+      const end = Math.max(start, Number(value.end ?? total));
+      const position = ["top", "center", "bottom"].includes(String(value.position))
+        ? (String(value.position) as "top" | "center" | "bottom")
+        : "bottom";
+
+      return { text: String(value.text ?? "").trim(), start, end, position };
+    })
+    .filter((item) => item.text && item.end > item.start);
+
+  if (!items.length) return result;
+
+  const layered = { ...result, text_overlays: items };
+  if (!render.canBurnCaptions() || !result.url) return layered;
+
+  try {
+    const burned = await render.textOverlays({ video: result, items });
+    return { ...layered, ...burned, text_overlayed: true };
+  } catch {
+    return layered;
   }
 });
 

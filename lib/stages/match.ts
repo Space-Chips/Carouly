@@ -108,6 +108,7 @@ export const rank = (brand: BrandKit): TemplateCandidate[] => {
     preview: previewFor(template.id)?.preview,
     still: previewFor(template.id)?.still,
     previewSilent: previewFor(template.id)?.silent === true,
+    previewReference: previewFor(template.id)?.reference === true,
     ...scoreTemplate(profile, template),
   })).sort((a, b) => b.score - a.score);
 

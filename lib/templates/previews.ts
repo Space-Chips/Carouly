@@ -33,6 +33,8 @@ export type TemplatePreview = {
   /** When it was generated, and on which backend. Shown nowhere; kept for us. */
   madeAt?: string;
   backend?: string;
+  /** A supplied visual direction, rather than a render this graph produced. */
+  reference?: boolean;
 };
 
 export const PREVIEWS: Record<string, TemplatePreview> = manifest;

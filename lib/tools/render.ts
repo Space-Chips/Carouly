@@ -290,3 +290,28 @@ export const captions = async (params: {
     clip_seconds: params.clip_seconds,
   });
 };
+
+/**
+ * Add designed copy as a separate visual layer.
+ *
+ * Captions follow dialogue; overlays are hooks, labels and call-outs that
+ * belong to the picture even when nobody is speaking.
+ */
+export const textOverlays = async (params: {
+  video: Media;
+  items: {
+    text: string;
+    start: number;
+    end: number;
+    position?: "top" | "center" | "bottom";
+  }[];
+}): Promise<Media> => {
+  if (mode() !== "local") {
+    throw new Error("burning text overlays needs the local render server");
+  }
+
+  return local("/text-overlays", {
+    video: { url: params.video.url },
+    items: params.items,
+  });
+};

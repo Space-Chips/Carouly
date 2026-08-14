@@ -1,6 +1,110 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
+/* Sign-in popup: the stills are deliberately allowed to feel like real phone
+ * footage. The slow crossfade keeps the auth screen alive without turning it
+ * into a carousel the visitor has to operate. */
+@keyframes auth-scene-cycle {
+  0%, 28% { opacity: 1; }
+  34%, 94% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+@keyframes auth-scene-copy-cycle {
+  0%, 28% { opacity: 1; transform: translateY(0); }
+  34%, 94% { opacity: 0; transform: translateY(0.5rem); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+.auth-stage {
+  isolation: isolate;
+}
+
+.auth-backdrop,
+.auth-backdrop-wash {
+  position: fixed;
+  inset: 0;
+}
+
+.auth-backdrop {
+  z-index: -2;
+  background: #d9d7d3;
+}
+
+.auth-backdrop-image {
+  object-fit: cover;
+  opacity: 0;
+  filter: saturate(0.75) contrast(0.92);
+  animation: auth-scene-cycle 18s ease-in-out infinite;
+}
+
+.auth-backdrop-image-0,
+.auth-scene-image-0,
+.auth-scene-copy-0 { animation-delay: 0s; }
+.auth-backdrop-image-1,
+.auth-scene-image-1,
+.auth-scene-copy-1 { animation-delay: 6s; }
+.auth-backdrop-image-2,
+.auth-scene-image-2,
+.auth-scene-copy-2 { animation-delay: 12s; }
+
+.auth-backdrop-wash {
+  z-index: -1;
+  background: rgba(232, 230, 226, 0.78);
+  backdrop-filter: blur(18px) saturate(0.65);
+}
+
+.auth-backdrop-wash-overlay {
+  background: rgba(18, 16, 14, 0.48);
+  backdrop-filter: blur(5px) saturate(0.7);
+}
+
+.auth-scene-image {
+  object-fit: cover;
+  opacity: 0;
+  animation: auth-scene-cycle 18s ease-in-out infinite;
+}
+
+.auth-scene-copy {
+  animation: auth-scene-copy-cycle 18s ease-in-out infinite;
+}
+
+.auth-clerk-form .cl-cardBox {
+  width: 100%;
+  max-width: none;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.auth-clerk-form .cl-card {
+  width: 100%;
+  padding: 0;
+  border: 0;
+  box-shadow: none;
+}
+
+/* Provider availability is controlled by Clerk, but keep this product surface
+ * deliberately Google-only if Apple is enabled on the instance. */
+.auth-clerk-form [data-provider="apple"],
+.auth-clerk-form [data-social-provider="apple"] {
+  display: none !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-backdrop-image,
+  .auth-scene-image,
+  .auth-scene-copy {
+    animation: none;
+  }
+
+  .auth-backdrop-image-0,
+  .auth-scene-image-0,
+  .auth-scene-copy-0 {
+    opacity: 1;
+  }
+}
+
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {

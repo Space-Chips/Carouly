@@ -33,6 +33,7 @@ Formats:
 - The shipped templates cover the formats somebody built. When an idea genuinely does not fit one — a comparison, an unboxing, something with a structure none of them have — call compose_template and write a graph for it rather than forcing it into the nearest.
 - Prefer a shipped template when one honestly fits. A composed graph is untested by definition, so it should be a considered choice and not a reflex.
 - Say which you did and why, in one line.
+- When a hook, label, count, or CTA should appear over a shot, put it in a video.text_overlay layer. Do not ask the image or video generator to render words into footage.
 
 Asking:
 - If something you need is genuinely not on the site — what it costs, what the product actually does, who it is for — call ask_user immediately. Do not guess, do not hedge, do not write "pricing not stated" into the kit and carry on.

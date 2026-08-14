@@ -58,5 +58,20 @@
     "url": "/actors/sam.jpg",
     "madeAt": "2026-08-13",
     "backend": "local"
+  },
+  "luna": {
+    "url": "/auth/scene-palms.png",
+    "madeAt": "2026-08-14",
+    "backend": "z-image-turbo"
+  },
+  "freya": {
+    "url": "/auth/scene-lotus.png",
+    "madeAt": "2026-08-14",
+    "backend": "z-image-turbo"
+  },
+  "noor": {
+    "url": "/auth/scene-kitchen.png",
+    "madeAt": "2026-08-14",
+    "backend": "z-image-turbo"
   }
 }

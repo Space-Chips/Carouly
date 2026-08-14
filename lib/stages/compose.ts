@@ -22,6 +22,7 @@ import { json as llmJson, MODEL, ModelError } from "@/lib/agent/llm";
 import type { VideoConcept } from "@/lib/agent/events";
 import type { BrandKit } from "@/lib/stages/brand";
 import { templateById } from "@/lib/templates";
+import { TEMPLATE_REFERENCE_DIRECTIONS } from "@/lib/templates/reference-library";
 import { NODE_DOCS } from "@/lib/workflow/nodes";
 import {
   parseWorkflow,
@@ -41,6 +42,10 @@ Rules that are not negotiable, because they are what makes the output watchable:
   produce three different people.
 - The video model speaks for itself. There is no voiceover track to add later, so a
   spoken line belongs in the fal.video prompt, in quotes.
+- Text that belongs to the visual format — a hook, a label, a number, a CTA — is
+  a separate layer. Add a video.text_overlay node after video.concat with items
+  shaped like {text, start, end, position}; position is top, center, or bottom.
+  Use video.captions only for dialogue captions. A template may use both.
 - foreach fans a node over a list; \`as\` names the loop variable. To pair two lists
   (script beats with their frames) you must zip them first.
 - Pin shared style and negative prompts in one \`const\` node and reference it.
@@ -104,6 +109,9 @@ NODE TYPES
 ${Object.entries(NODE_DOCS)
   .map(([name, doc]) => `- ${name}: ${doc}`)
   .join("\n")}
+
+SUPPLIED VISUAL DIRECTIONS
+${TEMPLATE_REFERENCE_DIRECTIONS.map((direction) => `- ${direction}`).join("\n")}
 
 A WORKING EXAMPLE, for dialect only — do not copy its shape if the idea wants another
 ${JSON.stringify(

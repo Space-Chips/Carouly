@@ -26,7 +26,14 @@ import { buildSrt } from "./captions.ts";
 import { config, publicUrl } from "./config.ts";
 import { makeImage, makeVideo, probe as probeBackend } from "./backend.ts";
 import * as dt from "./drawthings.ts";
-import { burnCaptions, concat, hasAudioStream, probeDuration, run } from "./media.ts";
+import {
+  burnCaptions,
+  burnTextOverlays,
+  concat,
+  hasAudioStream,
+  probeDuration,
+  run,
+} from "./media.ts";
 
 const digest = (value: unknown) =>
   createHash("sha1").update(JSON.stringify(value)).digest("hex").slice(0, 16);
@@ -238,6 +245,45 @@ const handlers: Record<string, Handler> = {
       captions: lines,
       captions_srt: buildSrt(lines, spans),
       captioned: true,
+      draft: true,
+    };
+  },
+
+  /** Place authored text over the picture independently of dialogue captions. */
+  async "/text-overlays"(body) {
+    const source = typeof body.video === "string" ? body.video : body.video?.url;
+    if (!source) throw new Error("no video to overlay");
+
+    const items = (body.items ?? [])
+      .map((item: Record<string, unknown>) => ({
+        text: String(item.text ?? "").trim(),
+        start: Math.max(0, Number(item.start ?? 0)),
+        end: Math.max(0, Number(item.end ?? 0)),
+        position: ["top", "center", "bottom"].includes(String(item.position))
+          ? String(item.position)
+          : "bottom",
+      }))
+      .filter((item: { text: string; start: number; end: number }) => item.text && item.end > item.start);
+
+    const local = String(source).match(/\/files\/([^/?#]+)$/);
+    const input = local ? outPath(local[1]) : outPath(`${digest(source)}.mp4`);
+
+    if (!local && !(await exists(input))) {
+      await writeFile(input, await fetchImage(String(source)));
+    }
+
+    const total = await probeDuration(input);
+    if (!items.length) return { url: publicUrl(local?.[1] ?? ""), seconds: total, draft: true };
+
+    const name = `${digest(["text-overlays", input, items])}.mp4`;
+    const path = outPath(name);
+    if (!(await exists(path))) await burnTextOverlays(input, items, path);
+
+    return {
+      url: publicUrl(name),
+      file: name,
+      seconds: await probeDuration(path),
+      text_overlays: items,
       draft: true,
     };
   },
