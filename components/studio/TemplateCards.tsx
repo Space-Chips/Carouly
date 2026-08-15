@@ -1,6 +1,7 @@
 "use client";
 
 import { ArrowRight, CaretDown, Play, Sparkle, SpeakerSlash } from "@phosphor-icons/react";
+import Image from "next/image";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
@@ -135,6 +136,18 @@ const Frame = ({
 }) => {
   if (template.preview) {
     return <Clip src={template.preview} poster={template.still} playing={playing} />;
+  }
+
+  if (template.still) {
+    return (
+      <Image
+        src={template.still}
+        alt=""
+        fill
+        unoptimized
+        className="absolute inset-0 size-full object-cover"
+      />
+    );
   }
 
   /**
@@ -470,6 +483,8 @@ export default function TemplateCards({
                     ? open.previewSilent
                       ? "The example is this template, run on a sample brand — a silent draft. Your render speaks."
                       : "The example is this template, run on a sample brand."
+                    : open.previewReference
+                      ? "This is supplied visual direction for the format. A full example render has not been made yet."
                     : "No example has been rendered for this one yet."}
                 </p>
 

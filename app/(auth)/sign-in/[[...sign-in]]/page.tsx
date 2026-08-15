@@ -1,7 +1,9 @@
 import { SignIn } from "@clerk/nextjs";
 import type { Metadata } from "next";
 
+import AuthFormSkeleton from "@/components/auth/AuthFormSkeleton";
 import AuthShell from "@/components/auth/AuthShell";
+import { authCopy, studioHref } from "@/components/auth/copy";
 import { paperClerkForm } from "@/lib/clerk-appearance";
 import { siteFromRedirect } from "@/lib/site-url";
 
@@ -20,23 +22,25 @@ export default async function SignInPage({
 }) {
   const { redirect_url } = await searchParams;
   const site = siteFromRedirect(redirect_url);
+  const copy = authCopy("sign-in", site);
 
   return (
     <AuthShell
       site={site}
-      eyebrow={site ? "Queued" : "Welcome back"}
-      heading={
-        site
-          ? "Sign in and this run starts."
-          : "Sign in and pick up where you left off."
-      }
-      blurb={
-        site
-          ? "We read the address as soon as you are through, and the first cut is waiting a few minutes later. Nothing publishes until you connect an account."
-          : "Your projects, your brand kits and everything the runs have kept are where you left them."
-      }
+      eyebrow={copy.eyebrow}
+      heading={copy.heading}
+      blurb={copy.blurb}
     >
-      <SignIn appearance={paperClerkForm} />
+      {/* The address is only in hand when Clerk parked it in `redirect_url`,
+          and in that case Clerk will honour it on its own. Naming it as a
+          fallback covers the other arrival — somebody who opened /sign-in
+          directly — without overriding a destination the middleware chose. */}
+      <SignIn
+        withSignUp
+        fallbackRedirectUrl={studioHref(site)}
+        appearance={paperClerkForm}
+        fallback={<AuthFormSkeleton />}
+      />
     </AuthShell>
   );
 }

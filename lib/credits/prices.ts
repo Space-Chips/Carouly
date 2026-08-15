@@ -114,7 +114,14 @@ export type Pack = {
   credits: number;
   /** Whole dollars, charged once. */
   price: number;
-  /** One line, in cuts rather than credits — the unit people actually think in. */
+  /**
+   * One line on what the pack is for.
+   *
+   * Deliberately free of arithmetic. The card computes the cut count and the
+   * rate per thousand from the numbers above, so a note that also counted cuts
+   * would be a second, hand-maintained copy of the same claim — and the two
+   * only ever agree until somebody edits a price.
+   */
   note: string;
   /**
    * The Stripe price id, read from the environment so the same build works
@@ -138,7 +145,7 @@ export const PACKS: Pack[] = [
     name: "Sample",
     credits: 600,
     price: 19,
-    note: "Two or three cuts, and the runs around them.",
+    note: "Enough to take a couple of formats all the way out.",
     priceEnv: "STRIPE_PRICE_SAMPLE",
   },
   {
@@ -146,7 +153,7 @@ export const PACKS: Pack[] = [
     name: "Studio",
     credits: 2_000,
     price: 49,
-    note: "About eight cuts. A month of posting, if you post weekly.",
+    note: "A month of posting, if you post weekly.",
     priceEnv: "STRIPE_PRICE_STUDIO",
   },
   {
@@ -154,7 +161,7 @@ export const PACKS: Pack[] = [
     name: "Scale",
     credits: 7_000,
     price: 149,
-    note: "Around thirty cuts. Enough to run formats against each other.",
+    note: "Enough to run formats against each other and keep the winner.",
     priceEnv: "STRIPE_PRICE_SCALE",
   },
 ];

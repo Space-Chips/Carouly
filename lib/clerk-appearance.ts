@@ -82,25 +82,46 @@ export const paperClerkForm = {
     // brand and is not a sentence anybody wrote.
     header: { display: "none" },
 
-    // One raised surface, clipped, so the footer reads as this card's foot
-    // rather than as a second panel that happens to be touching it.
-    cardBox: {
-      overflow: "hidden",
-      border: `1px solid ${INK.rule}`,
-      borderRadius: "1.5rem",
-      boxShadow:
-        "0 1px 2px rgba(12, 10, 9, 0.04), 0 12px 32px -12px rgba(12, 10, 9, 0.16)",
+    // Clerk's own card is dissolved into ours.
+    //
+    // `AuthPanel` is already the raised white surface, with its own border,
+    // radius, shadow and padding — so a second card inside it arrives as a
+    // panel-in-a-panel with two edges and two gutters. Stripping the chrome and
+    // the width cap here lets Clerk's form sit directly in our column and take
+    // its measure from it.
+    //
+    // Written as `elements` rather than as `.cl-cardBox` selectors in
+    // globals.css on purpose: those class names are Clerk's internal DOM, it
+    // logs a warning for every rule aimed at them, and it reserves the right to
+    // rename them on any component update.
+    // Clerk sizes the root to its content, so without this the form sits in a
+    // ~200px column in the middle of ours and the provider buttons truncate
+    // their own labels to "Goog…".
+    rootBox: {
+      width: "100%",
     },
-    card: {
+    cardBox: {
+      width: "100%",
+      maxWidth: "none",
+      overflow: "visible",
       border: 0,
-      backgroundColor: INK.lift,
+      borderRadius: 0,
       boxShadow: "none",
     },
-    // Sunk, like the landing page's closing sections: the card holds the task
-    // and the foot holds the way out of it.
+    card: {
+      width: "100%",
+      padding: 0,
+      border: 0,
+      backgroundColor: "transparent",
+      boxShadow: "none",
+    },
+    // The way out of the form — "no account yet", "use another method" — sits
+    // under it on the same paper rather than on a sunk strip, because our own
+    // card's foot is already doing that job an element further out.
     footer: {
-      borderTop: `1px solid ${INK.rule}`,
-      backgroundColor: INK.paper,
+      padding: "1.25rem 0 0",
+      borderTop: 0,
+      backgroundColor: "transparent",
       backgroundImage: "none",
       boxShadow: "none",
     },
@@ -109,12 +130,49 @@ export const paperClerkForm = {
     // button somebody pushes to get through the funnel and all three should
     // answer identically.
     formButtonPrimary: {
+      borderRadius: "0.75rem",
       transition: "transform 100ms cubic-bezier(0.33, 1, 0.68, 1)",
       "&:active": { transform: "scale(0.98)" },
       "@media (prefers-reduced-motion: reduce)": {
         transition: "none",
         "&:active": { transform: "none" },
       },
+    },
+    // Stacked rather than laid out in a row.
+    //
+    // Clerk sizes the row into as many equal columns as there are providers, so
+    // hiding Apple below leaves Google holding half a row with a gap beside it.
+    // A column also means the list can grow later without the buttons getting
+    // narrower than their own labels — this is a 24rem form, and "Continue with
+    // Google" does not survive being put in a third of it.
+    socialButtons: {
+      display: "flex",
+      flexDirection: "column",
+    },
+    socialButtonsBlockButton: {
+      width: "100%",
+      borderRadius: "0.75rem",
+      borderColor: INK.rule,
+      boxShadow: "none",
+    },
+
+    // Google only, as the funnel has always meant to be.
+    //
+    // This lived in globals.css as `[data-provider="apple"]`, which matched
+    // nothing — Clerk marks the provider with a class, not an attribute, so
+    // Apple has in fact been on the form the whole time. The per-provider
+    // element key is the supported way to say it and it does work.
+    //
+    // Worth knowing that this only hides the button. If Apple is enabled on the
+    // Clerk instance the strategy is still live, so the durable version of this
+    // decision is turning the provider off in the Clerk dashboard; this keeps
+    // the surface honest in the meantime.
+    socialButtonsBlockButton__apple: {
+      display: "none",
+    },
+    formFieldInput: {
+      borderRadius: "0.75rem",
+      boxShadow: "none",
     },
   },
 } as const;

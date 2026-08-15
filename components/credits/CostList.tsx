@@ -32,12 +32,12 @@ export default function CostList() {
   ];
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-rule bg-paper-lift">
+    <div className="overflow-hidden rounded-[1.25rem] border border-rule bg-paper-lift">
       <ul className="divide-y divide-rule">
         {rows.map((row) => (
           <li
             key={row.operation}
-            className="flex items-baseline justify-between gap-6 px-5 py-3"
+            className="flex items-baseline justify-between gap-6 px-5 py-3 transition-colors duration-200 ease-[var(--ease-out)] hover:bg-paper-sunk/40"
           >
             <div className="min-w-0">
               <p className="text-sm text-graphite">

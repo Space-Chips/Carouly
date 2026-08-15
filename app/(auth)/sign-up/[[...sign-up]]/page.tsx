@@ -1,7 +1,9 @@
 import { SignUp } from "@clerk/nextjs";
 import type { Metadata } from "next";
 
+import AuthFormSkeleton from "@/components/auth/AuthFormSkeleton";
 import AuthShell from "@/components/auth/AuthShell";
+import { authCopy, studioHref } from "@/components/auth/copy";
 import { paperClerkForm } from "@/lib/clerk-appearance";
 import { siteFromRedirect } from "@/lib/site-url";
 
@@ -18,23 +20,20 @@ export default async function SignUpPage({
 }) {
   const { redirect_url } = await searchParams;
   const site = siteFromRedirect(redirect_url);
+  const copy = authCopy("sign-up", site);
 
   return (
     <AuthShell
       site={site}
-      eyebrow={site ? "Queued" : "Early access"}
-      heading={
-        site
-          ? "Create your account and this run starts."
-          : "One address is the whole setup."
-      }
-      blurb={
-        site
-          ? "Free while we are in early access, and there is no card at signup. Nothing publishes until you connect an account."
-          : "No brief, no forms, no filming. Paste the address you already have and the first vertical cut lands minutes later — free while we are in early access."
-      }
+      eyebrow={copy.eyebrow}
+      heading={copy.heading}
+      blurb={copy.blurb}
     >
-      <SignUp appearance={paperClerkForm} />
+      <SignUp
+        fallbackRedirectUrl={studioHref(site)}
+        appearance={paperClerkForm}
+        fallback={<AuthFormSkeleton />}
+      />
     </AuthShell>
   );
 }

@@ -22,7 +22,7 @@ export default function HeroStage({ children }: { children: React.ReactNode }) {
     }
 
     const lightTimer = window.setTimeout(() => setLit(true), 700);
-    const moveTimer = window.setTimeout(() => setMovedUp(true), 1700);
+    const moveTimer = window.setTimeout(() => setMovedUp(true), 1200);
     return () => {
       window.clearTimeout(lightTimer);
       window.clearTimeout(moveTimer);

@@ -38,7 +38,7 @@ const cardStyle = (slot: typeof SLOTS[number], index: number) => ({
   "--card-y": `${slot.y}px`,
   "--card-rotate": `${slot.rotate}deg`,
   "--card-scale": String(slot.scale),
-  "--card-delay": `${2.3 + index * .24}s`,
+  "--card-delay": `${0.3 + index * .12}s`,
   zIndex: slot.z,
 } as CSSProperties);
 

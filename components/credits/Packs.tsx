@@ -1,11 +1,13 @@
 "use client";
 
-import { ArrowRight } from "@phosphor-icons/react";
+import { ArrowRight, Check } from "@phosphor-icons/react";
 import { useState, useTransition } from "react";
 
 import { startCheckout } from "@/lib/actions/credit.actions";
 import {
+  bestRate,
   cutsFor,
+  DEFAULT_SECONDS,
   FEATURED_PACK,
   formatCredits,
   perThousand,
@@ -14,11 +16,18 @@ import {
 } from "@/lib/credits/prices";
 
 /**
- * The three packs.
+ * The three packs, as the thing the page is for.
  *
- * Three options keep the choice simple, while the middle pack gives people a
- * clear default. It is called out with an honest recommendation and a stronger
- * action, so the page has a decisive path without hiding the other prices.
+ * One card is dark and the other two are paper. That is the whole hierarchy,
+ * and it is doing the work a badge alone cannot: the eye lands on the middle
+ * pack before it has read a word, which is the honest place for it to land —
+ * Sample is a trial and Scale is a commitment, and the person reading this
+ * arrived because a render stopped, not because they were shopping.
+ *
+ * Every line inside a card is computed from the pack rather than written next
+ * to it. Cuts, the rate per thousand and the gap to the smallest pack all fall
+ * out of `credits` and `price`, so the only way to make this page lie is to
+ * change a number in the catalogue and have the card quietly follow.
  */
 export default function Packs({
   packs,
@@ -53,99 +62,158 @@ export default function Packs({
     });
   };
 
+  const smallest = packs[0];
+
   return (
     <div>
-      <div className="grid gap-3 sm:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-3 sm:gap-5">
         {packs.map((pack, index) => {
           const featured = pack.id === FEATURED_PACK;
+          const cheapest = pack.price / pack.credits === bestRate;
           const saving = savingAgainstSmallest(pack);
+          const cuts = cutsFor(pack.credits);
+          const opening = busy === pack.id;
+
+          const lines = [
+            `About ${cuts} cut${cuts === 1 ? "" : "s"} at ${DEFAULT_SECONDS} seconds`,
+            `$${perThousand(pack)} per 1,000 credits${
+              saving > 0 ? ` · ${saving}% under ${smallest.name}` : ""
+            }`,
+            pack.note,
+          ];
 
           return (
+            /* The lift on the featured card is a margin rather than a
+               transform, so it does not have to be undone and re-applied every
+               time the card is hovered — two rules fighting over one transform
+               is how a card ends up snapping back down under the cursor. */
             <div
               key={pack.id}
-              className={`rise stagger-${index + 1} relative flex flex-col rounded-2xl border p-6 transition-transform duration-200 hover:-translate-y-0.5 ${
-                featured
-                  ? "border-ember/60 bg-[#fffaf6] shadow-[0_12px_35px_rgba(196,85,47,0.12)] sm:-translate-y-1"
-                  : "border-rule bg-paper-lift"
+              className={`rise stagger-${index + 1} flex ${
+                featured ? "sm:-my-5" : ""
               }`}
             >
-              {featured ? (
-                <span className="absolute -top-3 left-5 rounded-full bg-ember px-3 py-1 font-mono text-[10px] font-medium uppercase tracking-[0.14em] text-white">
-                  Most popular
-                </span>
-              ) : null}
-
-              <div className="flex items-baseline justify-between gap-3">
-                <h3 className="text-sm font-medium text-graphite">{pack.name}</h3>
-                {saving > 0 ? (
-                  <span className="rounded-full bg-ember/10 px-2 py-1 font-mono text-[10px] uppercase tracking-[0.12em] text-ember">
-                    {saving}% cheaper
-                  </span>
-                ) : null}
-              </div>
-
-              {/* The credits are the product and the price is the condition, so
-                  the credits are set large and the dollars are a line under
-                  them. Every other pricing page in the world does this the
-                  other way round, and every other pricing page is selling the
-                  money. */}
-              <p className="mt-5 font-mono text-3xl tabular-nums tracking-tight text-graphite">
-                {formatCredits(pack.credits)}
-              </p>
-              <p className="mt-1 text-sm text-mute">
-                credits · ${pack.price} once
-              </p>
-
-              <p className="pretty mt-4 text-sm leading-relaxed text-mute">
-                {pack.note}
-              </p>
-
-              <dl className="mt-5 space-y-1.5 border-t border-rule pt-4 font-mono text-[11px] uppercase tracking-[0.1em] text-mute">
-                <div className="flex justify-between gap-3">
-                  <dt>Cuts</dt>
-                  <dd className="tabular-nums text-graphite">
-                    ~{cutsFor(pack.credits)}
-                  </dd>
-                </div>
-                <div className="flex justify-between gap-3">
-                  <dt>Per 1,000</dt>
-                  <dd className="tabular-nums text-graphite">
-                    ${perThousand(pack)}
-                  </dd>
-                </div>
-              </dl>
-
-              <button
-                type="button"
-                disabled={!pack.buyable || busy !== null}
-                onClick={() => buy(pack.id)}
-                className={`group mt-6 inline-flex w-full items-center justify-center gap-2 rounded-full px-4 py-2.5 text-sm font-medium transition-all duration-200 ease-[var(--ease-out)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-graphite disabled:cursor-not-allowed disabled:opacity-45 ${
+              <article
+                className={`group/card relative flex h-full w-full flex-col rounded-[1.25rem] border p-6 transition-[transform,box-shadow] duration-200 ease-[var(--ease-out)] motion-safe:hover:-translate-y-1 sm:p-7 ${
                   featured
-                    ? "bg-ember text-white shadow-sm hover:bg-ember-lit active:scale-[0.98]"
-                    : "border border-rule text-graphite hover:border-graphite/30 active:scale-[0.98]"
+                    ? "border-graphite bg-graphite text-bone shadow-[0_24px_60px_-30px_rgba(12,10,9,0.65)] hover:shadow-[0_30px_70px_-28px_rgba(12,10,9,0.7)]"
+                    : "border-rule bg-paper-lift text-graphite hover:border-graphite/20 hover:shadow-[0_18px_40px_-30px_rgba(12,10,9,0.4)]"
                 }`}
               >
-                {busy === pack.id ? (
-                  <span className="breathe">Opening checkout…</span>
-                ) : (
-                  <>
-                    Buy {pack.name}
-                    <ArrowRight
-                      weight="bold"
-                      aria-hidden
-                      className="size-3.5 transition-transform duration-200 ease-[var(--ease-out)] group-hover:translate-x-0.5"
-                    />
-                  </>
-                )}
-              </button>
+                <header className="flex items-start justify-between gap-3">
+                  <h3
+                    className={`text-sm font-medium ${
+                      featured ? "text-bone" : "text-graphite"
+                    }`}
+                  >
+                    {pack.name}
+                  </h3>
 
-              {!pack.buyable ? (
-                <p className="mt-2 text-center text-xs text-mute">
-                  {ready
-                    ? "No price configured for this pack yet."
-                    : "Checkout is not set up on this deployment."}
+                  {/* Two ranks, and only where one is true. "Recommended" is a
+                      claim we are making; "best rate" is arithmetic. Labelling
+                      all three cards would rank nothing. */}
+                  {featured ? (
+                    <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-ember-lit">
+                      Recommended
+                    </span>
+                  ) : cheapest ? (
+                    <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-mute">
+                      Best rate
+                    </span>
+                  ) : null}
+                </header>
+
+                {/* The credits are the product and the price is the condition,
+                    so the credits are set in the poster face and the dollars
+                    are a line under them. Every other pricing page in the world
+                    does this the other way round, and every other pricing page
+                    is selling the money. */}
+                <p
+                  className={`poster mt-6 text-[3.25rem] tabular-nums sm:text-6xl ${
+                    featured ? "text-bone" : "text-graphite"
+                  }`}
+                >
+                  {formatCredits(pack.credits)}
                 </p>
-              ) : null}
+
+                <p
+                  className={`mt-2 text-sm ${featured ? "text-dim" : "text-mute"}`}
+                >
+                  credits ·{" "}
+                  <span
+                    className={`font-mono tabular-nums ${
+                      featured ? "text-bone" : "text-graphite"
+                    }`}
+                  >
+                    ${pack.price}
+                  </span>{" "}
+                  once
+                </p>
+
+                <ul className={`mt-6 space-y-2.5 border-t pt-5 text-sm ${
+                  featured ? "border-white/10" : "border-rule"
+                }`}>
+                  {lines.map((line) => (
+                    <li key={line} className="flex items-start gap-2.5">
+                      <Check
+                        weight="bold"
+                        aria-hidden
+                        className={`mt-0.5 size-3.5 shrink-0 ${
+                          featured ? "text-ember-lit" : "text-ember"
+                        }`}
+                      />
+                      <span
+                        className={`pretty leading-snug ${
+                          featured ? "text-bone/85" : "text-mute"
+                        }`}
+                      >
+                        {line}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+
+                {/* Pushed to the foot of the card rather than sitting a fixed
+                    gap under the last bullet, so the three actions line up on
+                    one row however many lines the notes above them run to. */}
+                <div className="mt-auto pt-8">
+                  <button
+                    type="button"
+                    disabled={!pack.buyable || busy !== null}
+                    onClick={() => buy(pack.id)}
+                    className={`group/cta inline-flex w-full items-center justify-center gap-2 rounded-full px-4 py-3 text-sm font-medium transition-colors duration-200 ease-[var(--ease-out)] motion-safe:active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-45 ${
+                      featured
+                        ? "bg-ember text-white hover:bg-ember-lit focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ember-lit"
+                        : "border border-graphite/25 text-graphite hover:border-graphite/50 hover:bg-paper-sunk/50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-graphite"
+                    }`}
+                  >
+                    {opening ? (
+                      <span className="breathe">Opening checkout…</span>
+                    ) : (
+                      <>
+                        Buy {pack.name}
+                        <ArrowRight
+                          weight="bold"
+                          aria-hidden
+                          className="size-3.5 transition-transform duration-200 ease-[var(--ease-out)] motion-safe:group-hover/cta:translate-x-0.5"
+                        />
+                      </>
+                    )}
+                  </button>
+
+                  {!pack.buyable ? (
+                    <p
+                      className={`mt-3 text-center text-xs ${
+                        featured ? "text-dim" : "text-mute"
+                      }`}
+                    >
+                      {ready
+                        ? "No price configured for this pack yet."
+                        : "Checkout is not set up on this deployment."}
+                    </p>
+                  ) : null}
+                </div>
+              </article>
             </div>
           );
         })}
@@ -154,7 +222,7 @@ export default function Packs({
       {error ? (
         <p
           role="alert"
-          className="stream mt-4 rounded-xl border border-fail/30 bg-fail/[0.04] p-3 text-sm text-fail"
+          className="stream mx-auto mt-6 max-w-xl rounded-xl border border-fail/30 bg-fail/[0.04] p-3 text-center text-sm text-fail"
         >
           {error}
         </p>

@@ -1,9 +1,19 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
-/* Sign-in popup: the stills are deliberately allowed to feel like real phone
- * footage. The slow crossfade keeps the auth screen alive without turning it
- * into a carousel the visitor has to operate. */
+/* ------------------------------------------------------------------- auth ---
+ * The sign-in card, its stills, and the dialog the landing page opens it in.
+ *
+ * Three scenes cross-fade on one 18s loop, staggered a third of a cycle apart
+ * so exactly one is up at a time and the handover is always a dissolve. The
+ * stills are deliberately allowed to feel like real phone footage — that is the
+ * product's claim — and it stays ambient rather than becoming a carousel the
+ * visitor has to operate.
+ *
+ * One keyframe pair, reused by the card's stills, the blurred backdrop behind
+ * the full-page route, and the lines that sit on them, so all three can never
+ * fall out of step with each other.
+ */
 @keyframes auth-scene-cycle {
   0%, 28% { opacity: 1; }
   34%, 94% { opacity: 0; }
@@ -20,15 +30,24 @@
   isolation: isolate;
 }
 
-.auth-backdrop,
-.auth-backdrop-wash {
+/* Behind the /sign-in and /sign-up routes: the card's own picture, blown out
+   and frosted, so the page carries one image at two depths rather than two
+   competing ones. Painted at z-0 under content at z-10 — a stacking order the
+   page can read off the markup, rather than negative indices that only work as
+   long as nobody gives the stage a background. */
+.auth-backdrop {
   position: fixed;
   inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  background: var(--paper);
 }
 
-.auth-backdrop {
-  z-index: -2;
-  background: #d9d7d3;
+.auth-backdrop-wash {
+  position: absolute;
+  inset: 0;
+  background: rgba(244, 243, 241, 0.74);
+  backdrop-filter: blur(22px) saturate(0.7);
 }
 
 .auth-backdrop-image {
@@ -36,6 +55,20 @@
   opacity: 0;
   filter: saturate(0.75) contrast(0.92);
   animation: auth-scene-cycle 18s ease-in-out infinite;
+}
+
+.auth-scene-image {
+  object-fit: cover;
+  opacity: 0;
+  animation: auth-scene-cycle 18s ease-in-out infinite;
+}
+
+/* Hidden at rest, like the stills. Without that, the two layers still waiting
+   out their delay sit at full opacity through the first six seconds and all
+   three lines print on top of each other. */
+.auth-scene-copy {
+  opacity: 0;
+  animation: auth-scene-copy-cycle 18s ease-in-out infinite;
 }
 
 .auth-backdrop-image-0,
@@ -48,50 +81,64 @@
 .auth-scene-image-2,
 .auth-scene-copy-2 { animation-delay: 12s; }
 
-.auth-backdrop-wash {
-  z-index: -1;
-  background: rgba(232, 230, 226, 0.78);
-  backdrop-filter: blur(18px) saturate(0.65);
+/* The dialog opens as one gesture: the page recedes behind ink and blur while
+   the card rises the last few pixels into place. Opacity and transform only, so
+   it composites on the GPU and cannot jank against Clerk's script loading in
+   the same frame. Out is a little over half the length of in — a dismissal
+   should feel like it has already happened by the time you look. */
+@keyframes auth-dialog-veil-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
-.auth-backdrop-wash-overlay {
-  background: rgba(18, 16, 14, 0.48);
-  backdrop-filter: blur(5px) saturate(0.7);
+@keyframes auth-dialog-veil-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
 }
 
-.auth-scene-image {
-  object-fit: cover;
-  opacity: 0;
-  animation: auth-scene-cycle 18s ease-in-out infinite;
+@keyframes auth-dialog-card-in {
+  from { opacity: 0; transform: translateY(12px) scale(0.97); }
+  to { opacity: 1; transform: none; }
 }
 
-.auth-scene-copy {
-  animation: auth-scene-copy-cycle 18s ease-in-out infinite;
+@keyframes auth-dialog-card-out {
+  from { opacity: 1; transform: none; }
+  to { opacity: 0; transform: translateY(6px) scale(0.985); }
 }
 
-.auth-clerk-form .cl-cardBox {
-  width: 100%;
-  max-width: none;
-  border: 0;
-  border-radius: 0;
-  box-shadow: none;
+.auth-dialog-overlay {
+  background: rgba(12, 10, 9, 0.44);
+  backdrop-filter: blur(6px) saturate(0.8);
 }
 
-.auth-clerk-form .cl-card {
-  width: 100%;
-  padding: 0;
-  border: 0;
-  box-shadow: none;
+.auth-dialog-overlay[data-state="open"] {
+  animation: auth-dialog-veil-in 220ms cubic-bezier(0.33, 1, 0.68, 1) both;
 }
 
-/* Provider availability is controlled by Clerk, but keep this product surface
- * deliberately Google-only if Apple is enabled on the instance. */
-.auth-clerk-form [data-provider="apple"],
-.auth-clerk-form [data-social-provider="apple"] {
-  display: none !important;
+.auth-dialog-overlay[data-state="closed"] {
+  animation: auth-dialog-veil-out 150ms cubic-bezier(0.32, 0, 0.67, 0) both;
 }
+
+.auth-dialog-card[data-state="open"] {
+  animation: auth-dialog-card-in 260ms cubic-bezier(0.23, 1, 0.32, 1) both;
+}
+
+.auth-dialog-card[data-state="closed"] {
+  animation: auth-dialog-card-out 160ms cubic-bezier(0.32, 0, 0.67, 0) both;
+}
+
+/* Nothing about Clerk's own DOM is styled from here any more. The card's shape,
+   its width, and the Google-only provider list all go through
+   `appearance.elements` in lib/clerk-appearance.ts, which is the supported API —
+   the `.cl-*` selectors that used to sit here aimed at class names Clerk
+   reserves the right to rename, and the one hiding Apple was aimed at a
+   `data-provider` attribute Clerk does not render, so it had quietly matched
+   nothing for as long as it existed. */
 
 @media (prefers-reduced-motion: reduce) {
+  /* The loop stops on its first frame rather than continuing to cross-fade,
+     and the dialog arrives as a plain fade with no travel — appearing is
+     information, moving is decoration. */
   .auth-backdrop-image,
   .auth-scene-image,
   .auth-scene-copy {
@@ -102,6 +149,19 @@
   .auth-scene-image-0,
   .auth-scene-copy-0 {
     opacity: 1;
+  }
+
+  .auth-scene-copy-1,
+  .auth-scene-copy-2 {
+    opacity: 0;
+  }
+
+  .auth-dialog-card[data-state="open"] {
+    animation: auth-dialog-veil-in 160ms linear both;
+  }
+
+  .auth-dialog-card[data-state="closed"] {
+    animation: auth-dialog-veil-out 120ms linear both;
   }
 }
 
@@ -767,7 +827,7 @@
   }
 
   .hero-cards-live .hero-card-lead {
-    animation: hero-card-lead 1.2s cubic-bezier(0.22, 1, 0.36, 1) 2.3s both;
+    animation: hero-card-lead 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.12s both;
   }
 
   /* The reel rail. One copy of the track scrolls exactly its own width while a
@@ -1328,6 +1388,60 @@
       animation: none;
       opacity: 0.6;
     }
+  }
+
+  /* ------------------------------------------------------------- buy page ---
+   * Two type treatments the rest of the app has no use for: the poster face,
+   * and the same face hollowed out into a ground.
+   *
+   * Anton is not a decorative import. It is the family satori sets every
+   * exported frame in — lib/fonts.ts hands it the same file — so the screen
+   * that sells renders is set in the type those renders come back wearing.
+   * A serif display here would have been a typeface borrowed from a magazine
+   * to sell something that has never touched paper.
+   */
+  .poster {
+    font-family: "Anton", var(--font-geist-sans), sans-serif;
+    font-weight: 400;
+    text-transform: uppercase;
+    letter-spacing: -0.005em;
+    line-height: 0.86;
+  }
+
+  /* The word the pricing turns on, set as ground rather than as copy.
+   *
+   * Hollow, at the weight of a hairline, so it is drawn in the same ink as
+   * every rule on the page and can never compete with the cards standing on
+   * it. Masked away toward the bottom, where those cards begin — a watermark
+   * that stayed at full strength under a price would be decoration charging
+   * rent on the one thing the page has to make legible.
+   *
+   * Hidden from the accessibility tree: the cards say "once" and "never
+   * expires" in words, and a screen reader has no use for a second, louder
+   * copy of the same claim with no sentence around it.
+   */
+  .ghost-word {
+    font-family: "Anton", var(--font-geist-sans), sans-serif;
+    color: transparent;
+    -webkit-text-stroke: 1.5px var(--rule);
+    letter-spacing: 0.04em;
+    /* Roomy on purpose. A tighter line box clips the tops of the glyphs
+       against the section's own overflow, and a watermark with a flat edge
+       across it stops reading as a ground and starts reading as a mistake. */
+    line-height: 1.15;
+    user-select: none;
+    -webkit-mask-image: linear-gradient(
+      to bottom,
+      rgba(0, 0, 0, 1) 0%,
+      rgba(0, 0, 0, 0.6) 70%,
+      transparent 96%
+    );
+    mask-image: linear-gradient(
+      to bottom,
+      rgba(0, 0, 0, 1) 0%,
+      rgba(0, 0, 0, 0.6) 70%,
+      transparent 96%
+    );
   }
 
   @media (prefers-reduced-motion: reduce) {

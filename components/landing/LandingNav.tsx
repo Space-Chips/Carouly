@@ -1,8 +1,11 @@
 "use client";
 
-import { Show, SignInButton, SignUpButton } from "@clerk/nextjs";
+import { Show } from "@clerk/nextjs";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+
+import AuthDialog from "@/components/auth/AuthDialog";
+import type { AuthIntent } from "@/components/auth/copy";
 
 const sections = [
   { href: "#work", label: "What it makes" },
@@ -23,6 +26,30 @@ const sections = [
 export default function LandingNav() {
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState<string | null>(null);
+  /**
+   * The sign-in dialog, and which door they came through.
+   *
+   * The same dialog the hero's address box opens, so the page has one sign-in
+   * and not two — Clerk's own `<SignInButton>` would have raised its modal
+   * dressed in the root layout's dark app appearance, which is correct over the
+   * studio and arrives on this page as a black panel on paper.
+   *
+   * Open and intent are separate pieces of state rather than one nullable one,
+   * because the card is still on screen while it animates out: collapsing them
+   * would swap "Create your studio" back to "Welcome back" in the 160ms after
+   * somebody presses Escape.
+   *
+   * No address to carry here: somebody pressing "Sign in" in the nav has not
+   * told us where they work yet, and the studio asks in its own box.
+   */
+  const [authOpen, setAuthOpen] = useState(false);
+  const [intent, setIntent] = useState<AuthIntent>("sign-in");
+
+  const openAuth = (next: AuthIntent) => {
+    setOpen(false);
+    setIntent(next);
+    setAuthOpen(true);
+  };
 
   // Which section the reader is actually in.
   //
@@ -142,14 +169,20 @@ export default function LandingNav() {
 
           <div className="hidden items-center gap-2 md:flex">
             <Show when="signed-out">
-              <SignInButton>
-                <button className="rounded-full px-3 py-2 text-sm text-mute outline-none transition-colors duration-700 ease-[cubic-bezier(0.32,0.72,0,1)] hover:text-graphite focus-visible:ring-2 focus-visible:ring-graphite">
-                  Sign in
-                </button>
-              </SignInButton>
-              <SignUpButton>
-                <button className={solidCta}>Start free</button>
-              </SignUpButton>
+              <button
+                type="button"
+                onClick={() => openAuth("sign-in")}
+                className="rounded-full px-3 py-2 text-sm text-mute outline-none transition-colors duration-700 ease-[cubic-bezier(0.32,0.72,0,1)] hover:text-graphite focus-visible:ring-2 focus-visible:ring-graphite"
+              >
+                Sign in
+              </button>
+              <button
+                type="button"
+                onClick={() => openAuth("sign-up")}
+                className={solidCta}
+              >
+                Start free
+              </button>
             </Show>
             <Show when="signed-in">
               <Link href="/studio" className={solidCta}>
@@ -223,16 +256,23 @@ export default function LandingNav() {
             }`}
           >
             <Show when="signed-out">
-              <SignUpButton>
-                <button className="w-full rounded-full bg-graphite px-3 py-2 text-base font-semibold text-white outline-none transition-all duration-700 ease-[cubic-bezier(0.32,0.72,0,1)] hover:bg-graphite/85 active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-graphite">
-                  Start free
-                </button>
-              </SignUpButton>
-              <SignInButton>
-                <button className="rounded-full text-base text-mute outline-none transition-colors hover:text-graphite focus-visible:ring-2 focus-visible:ring-graphite">
-                  Sign in
-                </button>
-              </SignInButton>
+              {/* The sheet closes as the dialog opens — two full-screen layers
+                  stacked on a phone would leave the menu showing through the
+                  card's own backdrop blur. */}
+              <button
+                type="button"
+                onClick={() => openAuth("sign-up")}
+                className="w-full rounded-full bg-graphite px-3 py-2 text-base font-semibold text-white outline-none transition-all duration-700 ease-[cubic-bezier(0.32,0.72,0,1)] hover:bg-graphite/85 active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-graphite"
+              >
+                Start free
+              </button>
+              <button
+                type="button"
+                onClick={() => openAuth("sign-in")}
+                className="rounded-full py-2 text-base text-mute outline-none transition-colors hover:text-graphite focus-visible:ring-2 focus-visible:ring-graphite"
+              >
+                Sign in
+              </button>
             </Show>
             <Show when="signed-in">
               <Link
@@ -246,6 +286,13 @@ export default function LandingNav() {
           </li>
         </ul>
       </div>
+
+      <AuthDialog
+        open={authOpen}
+        onOpenChange={setAuthOpen}
+        site={null}
+        intent={intent}
+      />
     </>
   );
 }
